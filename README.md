@@ -1,5 +1,5 @@
 
-# CardioVision 3D
+# HEART_BEAT_RHYTHM
 
 An explainable cardiovascular machine-learning research prototype combining tabular ML, an interactive coronary anatomy viewer, and a web application.
 
