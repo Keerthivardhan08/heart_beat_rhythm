@@ -1,0 +1,48 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+secrets.*
+*.pem
+*.key
+
+# Data and model artifacts (store outside Git or use approved artifact storage)
+data/raw/*
+data/processed/*
+ml/data/raw/*
+ml/data/processed/*
+ml/artifacts/*
+!ml/artifacts/README.md
+*.pt
+*.pth
+*.pkl
+*.joblib
+*.onnx
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+.next/
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

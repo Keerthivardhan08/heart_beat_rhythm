@@ -1,0 +1,10 @@
+
+# Template only: update after auditing the real dataset.
+random_seed: 42
+validation_strategy: "to_be_selected_after_class-distribution-audit"
+target_ids:
+  - cad
+  - lad
+  - lcx
+  - rca
+leakage_policy: "exclude target labels and answer-revealing diagnostic fields from predictors"

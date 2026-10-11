@@ -1,0 +1,1 @@
+Add shared hooks when needed; keep API state and error handling explicit.\n

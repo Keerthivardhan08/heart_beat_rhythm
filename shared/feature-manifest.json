@@ -1,0 +1,10 @@
+
+{
+  "schema_version": "0.1.0",
+  "status": "UNVERIFIED_TEMPLATE",
+  "description": "Replace this template only after auditing the actual dataset and official data dictionary.",
+  "features": [],
+  "excluded_fields": [],
+  "missing_value_policy": "TO_BE_DEFINED",
+  "owner": "Person 1 - ML Lead"
+}

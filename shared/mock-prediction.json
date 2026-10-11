@@ -1,0 +1,13 @@
+
+{
+  "status": "demo_only",
+  "notice": "This fixture is synthetic and must never be presented as a real prediction.",
+  "model_version": null,
+  "targets": {
+    "cad": null,
+    "lad": null,
+    "lcx": null,
+    "rca": null
+  },
+  "warnings": ["No trained model is configured."]
+}

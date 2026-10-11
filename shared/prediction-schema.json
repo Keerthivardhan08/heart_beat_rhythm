@@ -1,0 +1,21 @@
+
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CardioVisionPredictionResponse",
+  "type": "object",
+  "required": ["status", "model_version", "targets"],
+  "properties": {
+    "status": {"type": "string", "enum": ["ok", "model_not_configured", "error"]},
+    "model_version": {"type": ["string", "null"]},
+    "targets": {
+      "type": "object",
+      "properties": {
+        "cad": {"type": ["object", "null"]},
+        "lad": {"type": ["object", "null"]},
+        "lcx": {"type": ["object", "null"]},
+        "rca": {"type": ["object", "null"]}
+      }
+    },
+    "warnings": {"type": "array", "items": {"type": "string"}}
+  }
+}
