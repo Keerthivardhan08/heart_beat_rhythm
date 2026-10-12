@@ -1,13 +1,14 @@
 
 {
-  "status": "demo_only",
-  "notice": "This fixture is synthetic and must never be presented as a real prediction.",
-  "model_version": null,
-  "targets": {
-    "cad": null,
-    "lad": null,
-    "lcx": null,
-    "rca": null
+  "status": "ok",
+  "notice": "Synthetic fixture only. This must never be presented as a real prediction.",
+  "model_version": "mock-only",
+  "predictions": {
+    "cad": {"label": "negative", "predicted_class": "Normal", "probability": 0.18, "threshold": null, "threshold_status": "Not finalized"},
+    "lad": {"label": "negative", "predicted_class": "Normal", "probability": 0.12, "threshold": null, "threshold_status": "Not finalized"},
+    "lcx": {"label": "positive", "predicted_class": "Stenotic", "probability": 0.64, "threshold": null, "threshold_status": "Not finalized"},
+    "rca": {"label": "negative", "predicted_class": "Normal", "probability": 0.08, "threshold": null, "threshold_status": "Not finalized"}
   },
-  "warnings": ["No trained model is configured."]
+  "explanations": {},
+  "warnings": ["Mock-only fixture."]
 }

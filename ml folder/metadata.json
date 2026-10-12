@@ -1,0 +1,73 @@
+{
+  "project": "CardioVision3D",
+  "status": "Provisional research prototype",
+  "dataset_shape": [
+    303,
+    59
+  ],
+  "split_seed": 42,
+  "training_note": "Models fitted only on existing training splits. Held-out test data is not used for fitting or selection.",
+  "sklearn_version": "1.6.1",
+  "models": {
+    "Cath": {
+      "artifact": "cath_pipeline.joblib",
+      "features_file": "cath_features.json",
+      "feature_count": 52,
+      "classes": [
+        "CAD",
+        "Normal"
+      ],
+      "positive_class": "CAD",
+      "probability_threshold": null,
+      "threshold_status": "Not finalized",
+      "training_rows": 242,
+      "reserved_test_rows": 61,
+      "test_set_used_for_fitting": false
+    },
+    "LAD": {
+      "artifact": "lad_pipeline.joblib",
+      "features_file": "lad_features.json",
+      "feature_count": 52,
+      "classes": [
+        "Normal",
+        "Stenotic"
+      ],
+      "positive_class": "Stenotic",
+      "probability_threshold": null,
+      "threshold_status": "Not finalized",
+      "training_rows": 242,
+      "reserved_test_rows": 61,
+      "test_set_used_for_fitting": false
+    },
+    "LCX": {
+      "artifact": "lcx_pipeline.joblib",
+      "features_file": "lcx_features.json",
+      "feature_count": 42,
+      "classes": [
+        "Normal",
+        "Stenotic"
+      ],
+      "positive_class": "Stenotic",
+      "probability_threshold": null,
+      "threshold_status": "Not finalized",
+      "training_rows": 242,
+      "reserved_test_rows": 61,
+      "test_set_used_for_fitting": false
+    },
+    "RCA": {
+      "artifact": "rca_pipeline.joblib",
+      "features_file": "rca_features.json",
+      "feature_count": 52,
+      "classes": [
+        "Normal",
+        "Stenotic"
+      ],
+      "positive_class": "Stenotic",
+      "probability_threshold": null,
+      "threshold_status": "Not finalized",
+      "training_rows": 242,
+      "reserved_test_rows": 61,
+      "test_set_used_for_fitting": false
+    }
+  }
+}

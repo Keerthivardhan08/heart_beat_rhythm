@@ -1,10 +1,585 @@
-
 {
-  "schema_version": "0.1.0",
-  "status": "UNVERIFIED_TEMPLATE",
-  "description": "Replace this template only after auditing the actual dataset and official data dictionary.",
-  "features": [],
-  "excluded_fields": [],
-  "missing_value_policy": "TO_BE_DEFINED",
+  "schema_version": "0.2.0",
+  "status": "PROVISIONAL_FROM_COLAB_EXPORT",
+  "description": "Derived from the downloaded provisional model bundle in ml folder. Review against the official dataset before clinical or public claims.",
+  "source_artifact": "ml folder/metadata.json",
+  "targets": [
+    "cad",
+    "lad",
+    "lcx",
+    "rca"
+  ],
+  "features": [
+    {
+      "name": "Age",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Sex",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "BMI",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "DM",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "HTN",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Current Smoker",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "EX-Smoker",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "FH",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Obesity",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "CRF",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "CVA",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Airway disease",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Thyroid Disease",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "CHF",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "DLP",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "BP",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "PR",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Edema",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Weak Peripheral Pulse",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Lung rales",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Systolic Murmur",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Diastolic Murmur",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Typical Chest Pain",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Dyspnea",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Function Class",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Atypical",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Nonanginal",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "LowTH Ang",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "FBS",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "CR",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "TG",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "LDL",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "HDL",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "BUN",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "ESR",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "HB",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "K",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Na",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "WBC",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Lymph",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Neut",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "PLT",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "lcx",
+        "rca"
+      ]
+    },
+    {
+      "name": "Q Wave",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "rca"
+      ]
+    },
+    {
+      "name": "St Elevation",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "rca"
+      ]
+    },
+    {
+      "name": "St Depression",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "rca"
+      ]
+    },
+    {
+      "name": "Tinversion",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "rca"
+      ]
+    },
+    {
+      "name": "LVH",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "rca"
+      ]
+    },
+    {
+      "name": "Poor R Progression",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "rca"
+      ]
+    },
+    {
+      "name": "BBB",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "rca"
+      ]
+    },
+    {
+      "name": "EF-TTE",
+      "type": "number",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "rca"
+      ]
+    },
+    {
+      "name": "Region RWMA",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "rca"
+      ]
+    },
+    {
+      "name": "VHD",
+      "type": "binary_or_categorical",
+      "required": true,
+      "targets": [
+        "cad",
+        "lad",
+        "rca"
+      ]
+    }
+  ],
+  "excluded_fields": [
+    "Cath",
+    "CAD",
+    "LAD",
+    "LCX",
+    "RCA"
+  ],
+  "missing_value_policy": "All required model features must be supplied. The serialized pipelines handle preprocessing only for the columns they were trained with.",
   "owner": "Person 1 - ML Lead"
 }

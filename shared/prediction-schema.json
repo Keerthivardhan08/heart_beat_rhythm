@@ -3,19 +3,36 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "CardioVisionPredictionResponse",
   "type": "object",
-  "required": ["status", "model_version", "targets"],
+  "required": ["status", "model_version", "predictions", "notice"],
   "properties": {
     "status": {"type": "string", "enum": ["ok", "model_not_configured", "error"]},
     "model_version": {"type": ["string", "null"]},
-    "targets": {
+    "predictions": {
       "type": "object",
       "properties": {
-        "cad": {"type": ["object", "null"]},
-        "lad": {"type": ["object", "null"]},
-        "lcx": {"type": ["object", "null"]},
-        "rca": {"type": ["object", "null"]}
+        "cad": {"$ref": "#/$defs/targetPrediction"},
+        "lad": {"$ref": "#/$defs/targetPrediction"},
+        "lcx": {"$ref": "#/$defs/targetPrediction"},
+        "rca": {"$ref": "#/$defs/targetPrediction"}
       }
     },
+    "explanations": {"type": "object"},
+    "notice": {"type": "string"},
     "warnings": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "targetPrediction": {
+      "type": "object",
+      "required": ["label", "probability", "threshold_status"],
+      "properties": {
+        "label": {"type": "string", "enum": ["positive", "negative"]},
+        "predicted_class": {"type": "string"},
+        "probability": {"type": "number"},
+        "threshold": {"type": ["number", "null"]},
+        "threshold_status": {"type": "string"},
+        "positive_class": {"type": "string"},
+        "class_probabilities": {"type": "object"}
+      }
+    }
   }
 }
