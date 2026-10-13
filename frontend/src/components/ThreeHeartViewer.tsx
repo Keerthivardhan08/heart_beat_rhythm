@@ -77,12 +77,18 @@ interface ThreeHeartViewerProps {
   predictions?: Partial<Record<TargetId, TargetPrediction>>;
   selected: TargetId;
   onSelect: (target: TargetId) => void;
+  stenosisVessel?: TargetId | null; // which artery has the animated blockage
+  stenosisSeverity?: number; // 0 - 100%
+  animationMode?: "pulse" | "ischemia" | "both";
 }
 
 export function ThreeHeartViewer({
   predictions,
   selected,
   onSelect,
+  stenosisVessel = null,
+  stenosisSeverity = 80,
+  animationMode = "both",
 }: ThreeHeartViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -90,6 +96,7 @@ export function ThreeHeartViewer({
   const [showLabels, setShowLabels] = useState(true);
   const [heartbeatActive, setHeartbeatActive] = useState(true);
   const [modelChoice, setModelChoice] = useState<"heart" | "organ">("organ");
+  const [showFlowParticles, setShowFlowParticles] = useState(true);
 
   // Track projected 2D screen coordinates of each landmark
   const [screenCoords, setScreenCoords] = useState<
@@ -99,6 +106,16 @@ export function ThreeHeartViewer({
   const controlsRef = useRef<OrbitControls | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const heartGroupRef = useRef<THREE.Group | null>(null);
+  const vesselsGroupRef = useRef<THREE.Group | null>(null);
+  const particlesRef = useRef<THREE.Points | null>(null);
+
+  // Active stenosis target: defaults to prop, or if selected is lad/lcx/rca and is positive
+  const activeStenosisTarget: TargetId | null =
+    stenosisVessel !== undefined && stenosisVessel !== null
+      ? stenosisVessel
+      : predictions?.[selected]?.label === "positive" && selected !== "cad"
+      ? selected
+      : null;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -158,12 +175,144 @@ export function ThreeHeartViewer({
     rimLight.position.set(0, 3, -3);
     scene.add(rimLight);
 
-    // 6. Heart Group
+    // 6. Heart Group & Vessel Rig
     const heartGroup = new THREE.Group();
     scene.add(heartGroup);
     heartGroupRef.current = heartGroup;
 
-    // Load Model with local DRACO decompression
+    const vesselsGroup = new THREE.Group();
+    heartGroup.add(vesselsGroup);
+    vesselsGroupRef.current = vesselsGroup;
+
+    // Build Coronary Artery Mesh Rig with Dynamic Stenosis Ring & Glow
+    const arteryMaterials: Record<string, THREE.MeshStandardMaterial> = {};
+    const occlusionRings: Record<string, THREE.Mesh> = {};
+    const perfusionAuras: Record<string, THREE.Mesh> = {};
+
+    const ladCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.08, 0.22, 0.35),
+      new THREE.Vector3(0.14, 0.04, 0.43),
+      new THREE.Vector3(0.20, -0.18, 0.47),
+      new THREE.Vector3(0.22, -0.48, 0.41),
+      new THREE.Vector3(0.16, -0.70, 0.28),
+    ]);
+
+    const lcxCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.10, 0.20, 0.32),
+      new THREE.Vector3(0.26, 0.14, 0.25),
+      new THREE.Vector3(0.42, 0.04, 0.12),
+      new THREE.Vector3(0.46, -0.16, -0.06),
+      new THREE.Vector3(0.38, -0.38, -0.16),
+    ]);
+
+    const rcaCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.06, 0.20, 0.30),
+      new THREE.Vector3(-0.24, 0.12, 0.25),
+      new THREE.Vector3(-0.36, -0.04, 0.22),
+      new THREE.Vector3(-0.38, -0.28, 0.14),
+      new THREE.Vector3(-0.26, -0.50, 0.04),
+    ]);
+
+    const buildArteries = () => {
+      vesselsGroup.clear();
+
+      const vesselConfigs = [
+        { id: "lad", curve: ladCurve, baseRadius: 0.030, lesionT: 0.45 },
+        { id: "lcx", curve: lcxCurve, baseRadius: 0.027, lesionT: 0.40 },
+        { id: "rca", curve: rcaCurve, baseRadius: 0.029, lesionT: 0.48 },
+      ];
+
+      vesselConfigs.forEach(({ id, curve, baseRadius, lesionT }) => {
+        const isStenosed = activeStenosisTarget === id || (predictions?.[id as TargetId]?.label === "positive");
+        const isTargetSelected = selected === id;
+
+        // Dynamic material color
+        const mat = new THREE.MeshStandardMaterial({
+          color: isStenosed ? 0xff2a2a : isTargetSelected ? 0x00d2d3 : 0xff4d4d,
+          roughness: 0.22,
+          metalness: 0.25,
+          emissive: isStenosed ? 0x770000 : 0x000000,
+        });
+        arteryMaterials[id] = mat;
+
+        const geo = new THREE.TubeGeometry(curve, 36, baseRadius, 14, false);
+        const mesh = new THREE.Mesh(geo, mat);
+        vesselsGroup.add(mesh);
+
+        // Lesion plaque / stenosis ring at obstruction point
+        const lesionPos = curve.getPointAt(lesionT);
+        const lesionTangent = curve.getTangentAt(lesionT);
+
+        const ringGeo = new THREE.TorusGeometry(baseRadius * 1.5, baseRadius * 0.45, 12, 24);
+        const ringMat = new THREE.MeshStandardMaterial({
+          color: isStenosed ? 0xffea00 : 0x333333,
+          roughness: 0.4,
+          metalness: 0.3,
+          emissive: isStenosed ? 0xff8800 : 0x000000,
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.position.copy(lesionPos);
+        ringMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), lesionTangent);
+        ringMesh.visible = !!isStenosed;
+        vesselsGroup.add(ringMesh);
+        occlusionRings[id] = ringMesh;
+
+        // Ischemic myocardial aura (glowing distal zone affected by blockage)
+        const distalPos = curve.getPointAt(Math.min(lesionT + 0.35, 0.95));
+        const auraGeo = new THREE.SphereGeometry(0.18, 16, 16);
+        const auraMat = new THREE.MeshBasicMaterial({
+          color: 0xff0044,
+          transparent: true,
+          opacity: isStenosed ? 0.38 : 0.0,
+          wireframe: true,
+        });
+        const auraMesh = new THREE.Mesh(auraGeo, auraMat);
+        auraMesh.position.copy(distalPos);
+        auraMesh.visible = !!isStenosed;
+        vesselsGroup.add(auraMesh);
+        perfusionAuras[id] = auraMesh;
+      });
+    };
+
+    buildArteries();
+
+    // 7. Hemodynamic Blood Flow Particle Simulation
+    const particleCount = 120;
+    const particleGeo = new THREE.BufferGeometry();
+    const particlePositions = new Float32Array(particleCount * 3);
+    const particleColors = new Float32Array(particleCount * 3);
+    const particleProgress = new Float32Array(particleCount); // 0 to 1
+    const particleVesselIdx = new Int8Array(particleCount); // 0: lad, 1: lcx, 2: rca
+
+    for (let i = 0; i < particleCount; i++) {
+      particleProgress[i] = Math.random();
+      particleVesselIdx[i] = i % 3;
+      particlePositions[i * 3] = 0;
+      particlePositions[i * 3 + 1] = 0;
+      particlePositions[i * 3 + 2] = 0;
+
+      // Initial red blood cell color
+      particleColors[i * 3] = 1.0;
+      particleColors[i * 3 + 1] = 0.2;
+      particleColors[i * 3 + 2] = 0.2;
+    }
+
+    particleGeo.setAttribute("position", new THREE.BufferAttribute(particlePositions, 3));
+    particleGeo.setAttribute("color", new THREE.BufferAttribute(particleColors, 3));
+
+    const particleMat = new THREE.PointsMaterial({
+      size: 0.038,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.88,
+      blending: THREE.AdditiveBlending,
+    });
+
+    const particles = new THREE.Points(particleGeo, particleMat);
+    vesselsGroup.add(particles);
+    particlesRef.current = particles;
+
+    // 8. Load 3D Cardiac Mesh
     const loader = new GLTFLoader();
     const dracoLoader = new DRACOLoader();
     dracoLoader.setDecoderPath("/draco/");
@@ -171,9 +320,11 @@ export function ThreeHeartViewer({
 
     const modelPath = modelChoice === "heart" ? "/models/heart.glb" : "/models/heart-organ.glb";
 
-    // Helper: Mount and perfectly center any model
+    // Helper: Mount and center base heart model
     const mountModel = (root: THREE.Object3D) => {
-      heartGroup.clear();
+      // Keep vessels intact while updating root organ mesh
+      const existingHeartMesh = heartGroup.getObjectByName("organMeshWrapper");
+      if (existingHeartMesh) heartGroup.remove(existingHeartMesh);
 
       // Disable stray Blender lights/cameras
       root.traverse((child: any) => {
@@ -215,12 +366,10 @@ export function ThreeHeartViewer({
 
       // Wrapper group to ensure rotation & scaling anchor exactly at origin
       const wrapper = new THREE.Group();
+      wrapper.name = "organMeshWrapper";
       wrapper.add(root);
 
-      // Shift root inside wrapper so its center is (0, 0, 0)
       root.position.set(-center.x, -center.y, -center.z);
-
-      // Scale the wrapper uniformly
       wrapper.scale.setScalar(targetScale);
 
       heartGroup.add(wrapper);
@@ -228,7 +377,7 @@ export function ThreeHeartViewer({
       setLoadError(null);
     };
 
-    // Fallback: Procedural Anatomical Heart Mesh if GLB fails
+    // Fallback Procedural Anatomical Heart Mesh
     const createProceduralHeart = () => {
       const proceduralGroup = new THREE.Group();
 
@@ -261,28 +410,11 @@ export function ThreeHeartViewer({
       });
       proceduralGroup.add(new THREE.Mesh(aortaGeo, aortaMat));
 
-      // Coronary Arteries (LAD, LCX, RCA tubes)
-      const ladCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(0.08, 0.22, 0.35),
-        new THREE.Vector3(0.16, 0.02, 0.44),
-        new THREE.Vector3(0.22, -0.22, 0.48),
-        new THREE.Vector3(0.24, -0.52, 0.42),
-      ]);
-      const ladGeo = new THREE.TubeGeometry(ladCurve, 24, 0.028, 8, false);
-      const arteryMat = new THREE.MeshStandardMaterial({
-        color: 0xff3b30,
-        roughness: 0.25,
-        metalness: 0.2,
-      });
-      proceduralGroup.add(new THREE.Mesh(ladGeo, arteryMat));
-
       mountModel(proceduralGroup);
     };
 
-    // Immediately render procedural 3D heart so the scene is NEVER blank
     createProceduralHeart();
 
-    // Then asynchronously load the detailed model
     loader.load(
       modelPath,
       (gltf) => {
@@ -290,8 +422,9 @@ export function ThreeHeartViewer({
       },
       undefined,
       (err) => {
-        console.warn(`Error loading primary model ${modelPath}, trying alternate:`, err);
-        const fallbackPath = modelPath === "/models/heart.glb" ? "/models/heart-organ.glb" : "/models/heart.glb";
+        console.warn(`Error loading model ${modelPath}, trying alternate:`, err);
+        const fallbackPath =
+          modelPath === "/models/heart.glb" ? "/models/heart-organ.glb" : "/models/heart.glb";
         loader.load(
           fallbackPath,
           (gltfFallback) => {
@@ -299,24 +432,98 @@ export function ThreeHeartViewer({
           },
           undefined,
           (err2) => {
-            console.error("Both GLB models failed, activating procedural anatomical heart:", err2);
+            console.error("Models failed, fallback active:", err2);
             createProceduralHeart();
           }
         );
       }
     );
 
-    // 7. Render Loop & Landmark Projection
+    // 9. Render & Animation Loop
     let clock = new THREE.Clock();
+    const curves = [ladCurve, lcxCurve, rcaCurve];
+    const curveKeys: TargetId[] = ["lad", "lcx", "rca"];
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
       const elapsed = clock.getElapsedTime();
 
-      // Gentle heartbeat pulse
+      // Systolic heartbeat pulse
       if (heartbeatActive && heartGroup) {
         const pulse = 1 + Math.sin(elapsed * 4.2) * 0.022;
         heartGroup.scale.set(pulse, pulse, pulse);
+      }
+
+      // Animate Stenosis Lesion Rings & Ischemic Auras
+      curveKeys.forEach((id) => {
+        const ring = occlusionRings[id];
+        const aura = perfusionAuras[id];
+        const isStenosed =
+          activeStenosisTarget === id || predictions?.[id]?.label === "positive";
+
+        if (ring && ring.visible) {
+          // Warning pulsation scale
+          const ringPulse = 1 + Math.sin(elapsed * 6.5) * 0.25;
+          ring.scale.set(ringPulse, ringPulse, ringPulse);
+        }
+
+        if (aura && aura.visible) {
+          // Ischemic tissue hypoxia flicker
+          const auraPulse = 1 + Math.sin(elapsed * 3.5) * 0.18;
+          aura.scale.set(auraPulse, auraPulse, auraPulse);
+          (aura.material as THREE.MeshBasicMaterial).opacity =
+            0.25 + Math.sin(elapsed * 4.0) * 0.15;
+        }
+
+        const mat = arteryMaterials[id];
+        if (mat) {
+          if (isStenosed) {
+            mat.emissive.setHex(0x990000);
+            mat.emissiveIntensity = 0.6 + Math.sin(elapsed * 5.0) * 0.4;
+          } else {
+            mat.emissive.setHex(0x000000);
+            mat.emissiveIntensity = 0;
+          }
+        }
+      });
+
+      // Animate Hemodynamic Blood Flow Particles
+      if (showFlowParticles && particlesRef.current) {
+        const positions = particleGeo.attributes.position.array as Float32Array;
+        const colors = particleGeo.attributes.color.array as Float32Array;
+
+        for (let i = 0; i < particleCount; i++) {
+          const vIdx = particleVesselIdx[i];
+          const vesselId = curveKeys[vIdx];
+          const isStenosed =
+            activeStenosisTarget === vesselId || predictions?.[vesselId]?.label === "positive";
+
+          // Severe stenosis slows velocity across the lesion
+          const speed = isStenosed ? 0.0035 : 0.009;
+          particleProgress[i] = (particleProgress[i] + speed) % 1.0;
+
+          const t = particleProgress[i];
+          const c = curves[vIdx];
+          const pt = c.getPointAt(t);
+
+          positions[i * 3] = pt.x;
+          positions[i * 3 + 1] = pt.y;
+          positions[i * 3 + 2] = pt.z;
+
+          // Color change: stenosed turns amber/cyan hypoxia warning distal to lesion
+          if (isStenosed && t > 0.45) {
+            colors[i * 3] = 0.2; // R
+            colors[i * 3 + 1] = 0.7; // G
+            colors[i * 3 + 2] = 1.0; // B (cyan hypoxic blood)
+          } else {
+            colors[i * 3] = 1.0; // R
+            colors[i * 3 + 1] = 0.2; // G
+            colors[i * 3 + 2] = 0.2; // B (oxygenated red blood)
+          }
+        }
+
+        particleGeo.attributes.position.needsUpdate = true;
+        particleGeo.attributes.color.needsUpdate = true;
       }
 
       controls.update();
@@ -330,7 +537,6 @@ export function ThreeHeartViewer({
         tempVec.set(...lm.position);
         tempVec.applyMatrix4(heartGroup.matrixWorld);
 
-        // Check if facing camera
         const toCam = camera.position.clone().sub(tempVec).normalize();
         const normalApprox = tempVec.clone().normalize();
         const dot = normalApprox.dot(toCam);
@@ -353,7 +559,6 @@ export function ThreeHeartViewer({
 
     animate();
 
-    // 8. Handle Resize
     const handleResize = () => {
       if (!container) return;
       const w = container.clientWidth;
@@ -373,7 +578,7 @@ export function ThreeHeartViewer({
       dracoLoader.dispose();
       container.replaceChildren();
     };
-  }, [modelChoice, heartbeatActive]);
+  }, [modelChoice, heartbeatActive, activeStenosisTarget, showFlowParticles]);
 
   // Controls helper functions
   const handleRotate = (angleDegrees: number) => {
@@ -418,6 +623,14 @@ export function ThreeHeartViewer({
         <div className="toolbar-actions">
           <button
             type="button"
+            className={showFlowParticles ? "active" : ""}
+            onClick={() => setShowFlowParticles(!showFlowParticles)}
+            title="Toggle hemodynamic blood flow animation"
+          >
+            {showFlowParticles ? "Flow: ON" : "Flow: OFF"}
+          </button>
+          <button
+            type="button"
             className={showLabels ? "active" : ""}
             onClick={() => setShowLabels(!showLabels)}
             title="Toggle anatomical callout pins"
@@ -439,6 +652,20 @@ export function ThreeHeartViewer({
           <button type="button" onClick={handleReset}>Reset</button>
         </div>
       </div>
+
+      {/* Dynamic Stenosis Alert Banner in 3D Stage */}
+      {activeStenosisTarget && (
+        <div className="viewer-stenosis-banner">
+          <div className="pulse-danger-dot" />
+          <span>
+            <strong>
+              3D PATHOLOGY SIMULATION: {activeStenosisTarget.toUpperCase()} Stenosis (
+              {stenosisSeverity}%)
+            </strong>{" "}
+            — Flashing ring marks lesion site; cyan particles show post-stenotic distal hypoperfusion.
+          </span>
+        </div>
+      )}
 
       {/* 3D WebGL Canvas Container */}
       <div className="canvas-stage" ref={containerRef} />
@@ -464,14 +691,16 @@ export function ThreeHeartViewer({
             if (!coord || !coord.visible) return null;
 
             const isSelected = lm.targetId && lm.targetId === selected;
+            const isStenosed = lm.targetId && lm.targetId === activeStenosisTarget;
             const pred = lm.targetId ? predictions?.[lm.targetId] : undefined;
 
             const targetX = coord.x + lm.lineOffset[0];
             const targetY = coord.y + lm.lineOffset[1];
             const lineEndX = lm.align === "right" ? targetX + 140 : targetX - 140;
 
-            // Risk color coding
-            const riskColor = pred
+            const riskColor = isStenosed
+              ? "#ff3838"
+              : pred
               ? pred.label === "positive"
                 ? "#ff4757"
                 : "#2ed573"
@@ -488,58 +717,54 @@ export function ThreeHeartViewer({
                 }}
                 style={{ cursor: lm.targetId ? "pointer" : "default" }}
               >
-                {/* SVG Pointer Connector Line */}
                 <polyline
                   points={`${coord.x},${coord.y} ${targetX},${targetY} ${lineEndX},${targetY}`}
                   fill="none"
                   stroke={riskColor}
-                  strokeWidth={isSelected ? "2.5" : "1.5"}
-                  strokeDasharray={isSelected ? "none" : "2,2"}
+                  strokeWidth={isSelected || isStenosed ? "2.5" : "1.5"}
+                  strokeDasharray={isSelected || isStenosed ? "none" : "2,2"}
                   opacity={coord.visible ? 0.85 : 0.2}
                 />
 
-                {/* Hotspot Outer Halo Ring */}
                 <circle
                   cx={coord.x}
                   cy={coord.y}
-                  r={isSelected ? 10 : 7}
+                  r={isSelected || isStenosed ? 10 : 7}
                   fill="rgba(10, 20, 35, 0.8)"
                   stroke={riskColor}
                   strokeWidth="2"
-                  className="hotspot-pulse"
+                  className={isStenosed ? "hotspot-pulse danger" : "hotspot-pulse"}
                 />
 
-                {/* Hotspot Center Dot */}
                 <circle
                   cx={coord.x}
                   cy={coord.y}
-                  r={isSelected ? 4 : 3}
+                  r={isSelected || isStenosed ? 4 : 3}
                   fill={riskColor}
                 />
 
-                {/* Landmark Underlined Text Label */}
                 <text
                   x={lm.align === "right" ? targetX + 4 : targetX - 4}
                   y={targetY - 6}
                   textAnchor={lm.align === "right" ? "start" : "end"}
                   fill="#ffffff"
-                  fontSize={isSelected ? "13" : "11.5"}
-                  fontWeight={isSelected ? "700" : "500"}
+                  fontSize={isSelected || isStenosed ? "13" : "11.5"}
+                  fontWeight={isSelected || isStenosed ? "700" : "500"}
                   letterSpacing="0.3px"
                   fontFamily="system-ui, -apple-system, sans-serif"
                 >
                   {lm.name}
-                  {pred && (
-                    <tspan
-                      fill={riskColor}
-                      fontWeight="bold"
-                      dx="8"
-                    >
+                  {isStenosed ? (
+                    <tspan fill="#ff3838" fontWeight="bold" dx="8">
+                      ⚠ CRITICAL STENOSIS ({stenosisSeverity}%)
+                    </tspan>
+                  ) : pred ? (
+                    <tspan fill={riskColor} fontWeight="bold" dx="8">
                       {pred.label === "positive"
                         ? `▲ ${(pred.probability * 100).toFixed(0)}% High Risk`
                         : `● ${(pred.probability * 100).toFixed(0)}% Low Risk`}
                     </tspan>
-                  )}
+                  ) : null}
                 </text>
               </g>
             );
@@ -549,11 +774,11 @@ export function ThreeHeartViewer({
 
       {/* Bottom Floating Hint */}
       <div className="viewer-bottom-bar">
-        <span>🖱 Left-drag: Orbit/Rotate | 🖲 Scroll: Zoom | ⇥ Click pin or vessel to inspect</span>
+        <span>🖱 Left-drag: Orbit | 🖲 Scroll: Zoom | Red/Cyan dots: Dynamic Hemodynamic Flow Simulation</span>
         <div className="legend-tag">
-          <span className="dot dot-green" /> Low Risk
-          <span className="dot dot-red" /> Elevated Risk
-          <span className="dot dot-cyan" /> Selected Vessel
+          <span className="dot dot-green" /> Normal Flow
+          <span className="dot dot-red" /> Stenosis Plaque
+          <span className="dot dot-cyan" /> Hypoxic Distal Flow
         </div>
       </div>
     </div>

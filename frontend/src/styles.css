@@ -812,3 +812,336 @@ h3 { margin-bottom: 10px; }
   color: #8faac7;
   margin: 8px 0 0 0;
 }
+
+/* ============================================================
+   CLINICAL CASES SELECTOR & PATHOLOGY 3D ANIMATION STYLING
+   ============================================================ */
+
+.cases-selector-bar {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(7, 18, 36, 0.95), rgba(12, 28, 54, 0.95));
+  border: 1px solid rgba(112, 169, 232, 0.25);
+  border-radius: 12px;
+}
+
+.selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.selector-header h4 {
+  margin: 4px 0 0 0;
+  font-size: 0.95rem;
+  color: #eef6ff;
+  font-weight: 600;
+}
+
+.case-tag {
+  font-size: 0.68rem;
+  letter-spacing: 0.8px;
+  font-weight: 800;
+  color: #14d3b0;
+  text-transform: uppercase;
+}
+
+.active-case-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 71, 87, 0.16);
+  border: 1px solid rgba(255, 71, 87, 0.4);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ff6b81;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff4757;
+  box-shadow: 0 0 10px #ff4757;
+  animation: live-blink 1.2s infinite ease-in-out;
+}
+
+@keyframes live-blink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.7); }
+}
+
+.cases-pill-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.case-pill-button {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(1, 12, 24, 0.75);
+  border: 1px solid rgba(112, 169, 232, 0.18);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #c7ddf5;
+}
+
+.case-pill-button:hover {
+  background: rgba(18, 38, 66, 0.85);
+  border-color: rgba(112, 169, 232, 0.4);
+  transform: translateY(-2px);
+}
+
+.case-pill-button.active {
+  background: linear-gradient(135deg, rgba(31, 122, 255, 0.25), rgba(0, 210, 211, 0.2));
+  border-color: #00d2d3;
+  box-shadow: 0 0 16px rgba(0, 210, 211, 0.25);
+  transform: translateY(-2px);
+}
+
+.pill-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pill-vessel {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #eef6ff;
+}
+
+.pill-sub {
+  font-size: 0.72rem;
+  color: #8faac7;
+}
+
+.pill-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.badge-lad { background: rgba(255, 59, 48, 0.2); color: #ff6b81; }
+.badge-lcx { background: rgba(255, 149, 0, 0.2); color: #ffa502; }
+.badge-rca { background: rgba(46, 213, 115, 0.2); color: #2ed573; }
+.badge-cad { background: rgba(0, 210, 211, 0.2); color: #00d2d3; }
+
+/* 3D Viewer In-Canvas Stenosis Alert Banner */
+.viewer-stenosis-banner {
+  position: absolute;
+  top: 56px;
+  left: 14px;
+  right: 14px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgba(30, 8, 14, 0.88);
+  border: 1px solid rgba(255, 59, 48, 0.5);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: #f1f2f6;
+  pointer-events: none;
+  animation: slide-down 0.3s ease-out;
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pulse-danger-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff3838;
+  box-shadow: 0 0 12px #ff3838;
+  animation: danger-pulse 1s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes danger-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.5; }
+}
+
+/* Tabs & Case Analysis Details */
+.tabs-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(112, 169, 232, 0.15);
+  padding-bottom: 8px;
+}
+
+.tabs-header button {
+  background: transparent;
+  border: none;
+  color: #8faac7;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tabs-header button.active {
+  background: rgba(31, 122, 255, 0.2);
+  color: #70a1ff;
+}
+
+.case-title-box h3 {
+  margin: 4px 0 8px 0;
+  font-size: 1.05rem;
+  color: #eef6ff;
+}
+
+.case-desc {
+  font-size: 0.82rem;
+  color: #c7ddf5;
+  line-height: 1.45;
+  margin: 0 0 14px 0;
+}
+
+.severity-meter-box {
+  background: rgba(1, 12, 24, 0.65);
+  border: 1px solid rgba(112, 169, 232, 0.16);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+
+.meter-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+  color: #8faac7;
+}
+
+.text-danger { color: #ff6b81; font-weight: 700; }
+.text-success { color: #2ed573; font-weight: 700; }
+
+.meter-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fill-danger {
+  background: linear-gradient(90deg, #ff9f43, #ff5252);
+  box-shadow: 0 0 10px rgba(255, 82, 82, 0.5);
+}
+
+.fill-success {
+  background: linear-gradient(90deg, #10ac84, #1dd1a1);
+}
+
+.case-highlights-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.highlight-item {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  background: rgba(2, 16, 32, 0.6);
+  border-radius: 6px;
+  border-left: 3px solid #1f7aff;
+}
+
+.hl-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #14d3b0;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.hl-val {
+  font-size: 0.78rem;
+  color: #c7ddf5;
+  line-height: 1.35;
+}
+
+/* Pathology Legend in Sidebar */
+.pathology-legend-list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pathology-legend-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #c7ddf5;
+}
+
+.legend-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ring-indicator {
+  background: #ffea00;
+  border: 2px solid #ff9f43;
+  box-shadow: 0 0 10px #ffea00;
+}
+
+.flow-indicator {
+  background: radial-gradient(circle, #00d2d3 30%, #ff4757 70%);
+  box-shadow: 0 0 8px #00d2d3;
+}
+
+.aura-indicator {
+  background: transparent;
+  border: 2px dashed #ff0044;
+  box-shadow: 0 0 8px #ff0044;
+}
+
+.pulse-indicator {
+  background: #ff4757;
+  animation: live-blink 1s infinite;
+}
+
+.hotspot-pulse.danger {
+  stroke: #ff3838;
+  animation: danger-pulse 0.8s infinite;
+}

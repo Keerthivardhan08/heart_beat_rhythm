@@ -125,6 +125,9 @@ export function App() {
             predictions={prediction?.predictions}
             selected={selectedTarget}
             onSelect={setSelectedTarget}
+            onApplyCaseFeatures={(caseFeats) => {
+              setFeatures((prev) => ({ ...prev, ...caseFeats }));
+            }}
           />
         )}
 
