@@ -19,14 +19,14 @@ const LANDMARKS: Landmark[] = [
   {
     id: "aorta",
     name: "Aorta",
-    position: [-0.04, 0.52, 0.12],
+    position: [-0.04, 0.62, 0.14],
     align: "right",
-    lineOffset: [50, -25],
+    lineOffset: [60, -25],
   },
   {
     id: "lmca",
     name: "Left main coronary artery",
-    position: [0.08, 0.20, 0.36],
+    position: [0.12, 0.26, 0.42],
     align: "right",
     lineOffset: [90, -10],
   },
@@ -35,41 +35,41 @@ const LANDMARKS: Landmark[] = [
     targetId: "lad",
     name: "Left anterior descending artery (LAD)",
     sublabel: "Critical anterior wall perfusion",
-    position: [0.18, -0.15, 0.44],
+    position: [0.22, -0.16, 0.52],
     align: "right",
-    lineOffset: [70, 20],
+    lineOffset: [80, 20],
   },
   {
     id: "lcx",
     targetId: "lcx",
     name: "Left circumflex artery (LCX)",
     sublabel: "Lateral wall branch",
-    position: [0.38, 0.08, 0.22],
+    position: [0.46, 0.10, 0.26],
     align: "right",
-    lineOffset: [80, -30],
+    lineOffset: [85, -30],
   },
   {
     id: "lv",
     name: "Left ventricle",
-    position: [0.15, -0.56, 0.32],
+    position: [0.18, -0.62, 0.38],
     align: "right",
-    lineOffset: [60, 40],
+    lineOffset: [70, 40],
   },
   {
     id: "rv",
     name: "Right ventricle",
-    position: [-0.20, -0.34, 0.42],
+    position: [-0.26, -0.36, 0.48],
     align: "left",
-    lineOffset: [-70, 30],
+    lineOffset: [-80, 30],
   },
   {
     id: "rca",
     targetId: "rca",
     name: "Right coronary artery (RCA)",
     sublabel: "Inferior / posterior perfusion",
-    position: [-0.36, 0.04, 0.32],
+    position: [-0.42, 0.06, 0.38],
     align: "left",
-    lineOffset: [-90, -15],
+    lineOffset: [-95, -15],
   },
 ];
 
@@ -129,32 +129,32 @@ export function ThreeHeartViewer({
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.35;
+    renderer.toneMappingExposure = 1.4;
     container.replaceChildren(renderer.domElement);
 
     // 4. Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.minDistance = 1.6;
-    controls.maxDistance = 6.0;
+    controls.minDistance = 1.4;
+    controls.maxDistance = 5.5;
     controls.maxPolarAngle = Math.PI * 0.85;
     controls.minPolarAngle = Math.PI * 0.15;
     controlsRef.current = controls;
 
     // 5. Studio Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
     keyLight.position.set(3, 4, 3.5);
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight(0x70a1ff, 0.9);
+    const fillLight = new THREE.DirectionalLight(0x70a1ff, 1.2);
     fillLight.position.set(-3, -1, 2);
     scene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0xff6b81, 1.2);
+    const rimLight = new THREE.DirectionalLight(0xff6b81, 1.4);
     rimLight.position.set(0, 3, -3);
     scene.add(rimLight);
 
@@ -171,52 +171,132 @@ export function ThreeHeartViewer({
 
     const modelPath = modelChoice === "heart" ? "/models/heart.glb" : "/models/heart-organ.glb";
 
-    const loadSuccess = (gltf: any) => {
-      const root = gltf.scene;
+    // Helper: Mount and perfectly center any model
+    const mountModel = (root: THREE.Object3D) => {
+      heartGroup.clear();
 
-      // Auto-center and normalize size
-      const box = new THREE.Box3().setFromObject(root);
-      const center = box.getCenter(new THREE.Vector3());
-      const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const scale = 2.0 / (maxDim || 1);
-
-      root.position.sub(center);
-      root.scale.setScalar(scale);
-
-      // Ensure materials have rich lighting response
+      // Disable stray Blender lights/cameras
       root.traverse((child: any) => {
+        if (child.isLight || child.isCamera) {
+          child.visible = false;
+        }
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
           if (child.material) {
-            child.material.roughness = 0.38;
-            child.material.metalness = 0.12;
+            child.material.side = THREE.DoubleSide;
+            child.material.roughness = 0.42;
+            child.material.metalness = 0.08;
           }
         }
       });
 
-      heartGroup.add(root);
+      // Compute bounding box strictly across meshes
+      const box = new THREE.Box3();
+      let meshFound = false;
+      root.traverse((child: any) => {
+        if (child instanceof THREE.Mesh) {
+          box.expandByObject(child);
+          meshFound = true;
+        }
+      });
+
+      if (!meshFound) {
+        box.setFromObject(root);
+      }
+
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      const targetScale = 2.15 / maxDim;
+
+      // Wrapper group to ensure rotation & scaling anchor exactly at origin
+      const wrapper = new THREE.Group();
+      wrapper.add(root);
+
+      // Shift root inside wrapper so its center is (0, 0, 0)
+      root.position.set(-center.x, -center.y, -center.z);
+
+      // Scale the wrapper uniformly
+      wrapper.scale.setScalar(targetScale);
+
+      heartGroup.add(wrapper);
       setLoading(false);
       setLoadError(null);
     };
 
+    // Fallback: Procedural Anatomical Heart Mesh if GLB fails
+    const createProceduralHeart = () => {
+      const proceduralGroup = new THREE.Group();
+
+      // Ventricular body
+      const ventGeo = new THREE.SphereGeometry(0.72, 32, 32);
+      ventGeo.scale(1, 1.35, 0.85);
+      const ventMat = new THREE.MeshStandardMaterial({
+        color: 0xa8283d,
+        roughness: 0.35,
+        metalness: 0.1,
+      });
+      const ventMesh = new THREE.Mesh(ventGeo, ventMat);
+      ventMesh.position.set(0, -0.25, 0);
+      ventMesh.rotation.z = -0.15;
+      proceduralGroup.add(ventMesh);
+
+      // Aorta arch
+      const aortaCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.05, 0.2, 0.05),
+        new THREE.Vector3(-0.08, 0.55, 0.08),
+        new THREE.Vector3(0.08, 0.72, 0.02),
+        new THREE.Vector3(0.22, 0.58, -0.1),
+        new THREE.Vector3(0.24, 0.25, -0.15),
+      ]);
+      const aortaGeo = new THREE.TubeGeometry(aortaCurve, 32, 0.15, 16, false);
+      const aortaMat = new THREE.MeshStandardMaterial({
+        color: 0xdb6576,
+        roughness: 0.3,
+        metalness: 0.1,
+      });
+      proceduralGroup.add(new THREE.Mesh(aortaGeo, aortaMat));
+
+      // Coronary Arteries (LAD, LCX, RCA tubes)
+      const ladCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0.08, 0.22, 0.35),
+        new THREE.Vector3(0.16, 0.02, 0.44),
+        new THREE.Vector3(0.22, -0.22, 0.48),
+        new THREE.Vector3(0.24, -0.52, 0.42),
+      ]);
+      const ladGeo = new THREE.TubeGeometry(ladCurve, 24, 0.028, 8, false);
+      const arteryMat = new THREE.MeshStandardMaterial({
+        color: 0xff3b30,
+        roughness: 0.25,
+        metalness: 0.2,
+      });
+      proceduralGroup.add(new THREE.Mesh(ladGeo, arteryMat));
+
+      mountModel(proceduralGroup);
+    };
+
     loader.load(
       modelPath,
-      loadSuccess,
+      (gltf) => {
+        mountModel(gltf.scene);
+      },
       undefined,
       (err) => {
         console.warn(`Error loading primary model ${modelPath}, trying alternate:`, err);
-        // Automatic fallback to uncompressed heart-organ.glb
-        const fallbackPath = "/models/heart-organ.glb";
+        const fallbackPath = modelPath === "/models/heart.glb" ? "/models/heart-organ.glb" : "/models/heart.glb";
         loader.load(
           fallbackPath,
-          loadSuccess,
+          (gltfFallback) => {
+            mountModel(gltfFallback.scene);
+          },
           undefined,
           (err2) => {
-            console.error("Error loading fallback heart model:", err2);
-            setLoadError("Could not load 3D GLB model.");
-            setLoading(false);
+            console.error("Both GLB models failed, activating procedural anatomical heart:", err2);
+            createProceduralHeart();
           }
         );
       }
@@ -240,7 +320,6 @@ export function ThreeHeartViewer({
 
       // Project 3D landmarks to 2D screen positions
       const newCoords: Record<string, { x: number; y: number; visible: boolean }> = {};
-      const raycaster = new THREE.Raycaster();
       const tempVec = new THREE.Vector3();
 
       LANDMARKS.forEach((lm) => {
@@ -261,7 +340,7 @@ export function ThreeHeartViewer({
         newCoords[lm.id] = {
           x,
           y,
-          visible: inFrustum && dot > -0.2, // Visible when not completely obscured behind
+          visible: inFrustum && dot > -0.2,
         };
       });
 
@@ -363,7 +442,7 @@ export function ThreeHeartViewer({
       {loading && (
         <div className="viewer-overlay-message">
           <div className="spinner" />
-          <span>Loading 3D Anatomical Heart GLB...</span>
+          <span>Loading 3D Anatomical Heart...</span>
         </div>
       )}
 
