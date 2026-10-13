@@ -89,7 +89,7 @@ export function ThreeHeartViewer({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showLabels, setShowLabels] = useState(true);
   const [heartbeatActive, setHeartbeatActive] = useState(true);
-  const [modelChoice, setModelChoice] = useState<"heart" | "organ">("heart");
+  const [modelChoice, setModelChoice] = useState<"heart" | "organ">("organ");
 
   // Track projected 2D screen coordinates of each landmark
   const [screenCoords, setScreenCoords] = useState<
@@ -279,6 +279,10 @@ export function ThreeHeartViewer({
       mountModel(proceduralGroup);
     };
 
+    // Immediately render procedural 3D heart so the scene is NEVER blank
+    createProceduralHeart();
+
+    // Then asynchronously load the detailed model
     loader.load(
       modelPath,
       (gltf) => {

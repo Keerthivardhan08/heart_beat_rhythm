@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnatomyViewer } from "../pages/AnatomyViewer";
+import { BodyParts3DViewer } from "../pages/BodyParts3DViewer";
 import { ThreeHeartViewer } from "../components/ThreeHeartViewer";
 import { Disclaimer } from "../components/Disclaimer";
 import { PatientDataForm } from "../components/PatientDataForm";
@@ -8,7 +9,7 @@ import { defaultFeatureValues, featureGroups, featureManifest } from "../data/fe
 import { requestPrediction } from "../services/api";
 import type { PredictionResponse, TargetId } from "../types/api";
 
-type Page = "overview" | "analysis" | "anatomy" | "quality";
+type Page = "overview" | "analysis" | "anatomy" | "bodyparts3d" | "quality";
 
 const targetLabels: Record<TargetId, string> = {
   cad: "Overall CAD",
@@ -58,6 +59,7 @@ export function App() {
           <button className={page === "overview" ? "active" : ""} onClick={() => setPage("overview")}>Overview</button>
           <button className={page === "analysis" ? "active" : ""} onClick={() => setPage("analysis")}>New Analysis</button>
           <button className={page === "anatomy" ? "active" : ""} onClick={() => setPage("anatomy")}>3D Viewer</button>
+          <button className={page === "bodyparts3d" ? "active" : ""} onClick={() => setPage("bodyparts3d")}>BodyParts3D (DBCLS)</button>
           <button className={page === "quality" ? "active" : ""} onClick={() => setPage("quality")}>Model Quality</button>
         </nav>
         <div className="sidebar-card">
@@ -125,6 +127,8 @@ export function App() {
             onSelect={setSelectedTarget}
           />
         )}
+
+        {page === "bodyparts3d" && <BodyParts3DViewer />}
 
         {page === "quality" && <QualityPage />}
 

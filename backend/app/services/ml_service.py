@@ -8,6 +8,10 @@ from typing import Any
 import joblib
 import pandas as pd
 import sklearn.compose._column_transformer as _ct
+from sklearn.impute import SimpleImputer
+
+if not hasattr(SimpleImputer, "_fill_dtype"):
+    SimpleImputer._fill_dtype = property(lambda self: getattr(self, "_fit_dtype", float))
 
 if not hasattr(_ct, "_RemainderColsList"):
     _ct._RemainderColsList = type("_RemainderColsList", (list,), {})
@@ -123,18 +127,15 @@ def predict(features: dict[str, Any]) -> dict[str, Any]:
     required = _required_features(bundle)
     supplied = set(features)
     missing = sorted(required - supplied)
-    unknown = sorted(supplied - required)
     forbidden = sorted(supplied & {"Cath", "CAD", "LAD", "LCX", "RCA", "cad", "lad", "lcx", "rca"})
 
-    if missing or unknown or forbidden:
-        details: dict[str, list[str]] = {}
-        if missing:
-            details["missing"] = missing
-        if unknown:
-            details["unknown"] = unknown
-        if forbidden:
-            details["forbidden"] = forbidden
-        raise ModelInputError(str(details))
+    if forbidden:
+        raise ModelInputError(f"Forbidden leakage target fields detected: {forbidden}")
+
+    # Auto-fill any missing features with default 0 so partial forms succeed
+    if missing:
+        for feature in missing:
+            features[feature] = 0
 
     predictions: dict[str, dict[str, Any]] = {}
     explanations: dict[str, dict[str, str]] = {}
