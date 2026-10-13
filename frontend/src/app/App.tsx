@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnatomyViewer } from "../pages/AnatomyViewer";
+import { ThreeHeartViewer } from "../components/ThreeHeartViewer";
 import { Disclaimer } from "../components/Disclaimer";
 import { PatientDataForm } from "../components/PatientDataForm";
 import { PredictionCard } from "../components/PredictionCard";
@@ -175,7 +176,7 @@ function OverviewPage({
           </div>
           <button className="ghost" onClick={onOpenViewer}>Open viewer</button>
         </div>
-        <AnatomyViewer
+        <ThreeHeartViewer
           predictions={prediction?.predictions}
           selected={selectedTarget}
           onSelect={onSelectTarget}

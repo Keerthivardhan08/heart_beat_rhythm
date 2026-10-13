@@ -289,3 +289,261 @@ h3 { margin-bottom: 10px; }
   .hero-card, .section-header, .page-heading { flex-direction: column; }
   .viewer-stage, .vessel-panel, .asset-panel { min-height: auto; }
 }
+
+/* ============================================================
+   3D ANATOMICAL VIEWER & THREE.JS OVERLAY STYLING
+   ============================================================ */
+
+.three-heart-viewer-wrapper {
+  position: relative;
+  width: 100%;
+  height: 580px;
+  min-height: 520px;
+  background: radial-gradient(circle at 50% 50%, #0e1a2b 0%, #06090e 100%);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.8), 0 20px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(112, 169, 232, 0.16);
+}
+
+.canvas-stage {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.canvas-stage:active {
+  cursor: grabbing;
+}
+
+.three-toolbar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.three-toolbar .pill-group {
+  display: flex;
+  gap: 6px;
+  background: rgba(4, 13, 26, 0.85);
+  padding: 4px;
+  border-radius: 30px;
+  border: 1px solid rgba(112, 169, 232, 0.2);
+  backdrop-filter: blur(12px);
+}
+
+.three-toolbar .pill-group button {
+  background: transparent;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #8faac7;
+  transition: all 0.2s ease;
+}
+
+.three-toolbar .pill-group button.active {
+  background: linear-gradient(135deg, #1f7aff, #00d2d3);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(31, 122, 255, 0.35);
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 6px;
+  background: rgba(4, 13, 26, 0.85);
+  padding: 4px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(112, 169, 232, 0.2);
+  backdrop-filter: blur(12px);
+}
+
+.toolbar-actions button {
+  background: rgba(18, 38, 69, 0.6);
+  border: 1px solid rgba(112, 169, 232, 0.15);
+  border-radius: 6px;
+  color: #c7ddf5;
+  font-size: 0.75rem;
+  padding: 5px 9px;
+  transition: all 0.15s ease;
+}
+
+.toolbar-actions button:hover {
+  background: rgba(31, 122, 255, 0.3);
+  border-color: #347cff;
+  color: #ffffff;
+}
+
+.toolbar-actions button.active {
+  background: #1f7aff;
+  color: #ffffff;
+}
+
+/* Callouts & Pins Overlay */
+.callout-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.callout-group {
+  transition: all 0.2s ease;
+}
+
+.callout-group:hover circle:first-of-type {
+  r: 12px;
+  stroke-width: 3px;
+}
+
+.callout-group text {
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.8);
+  user-select: none;
+}
+
+.hotspot-pulse {
+  transform-origin: center;
+}
+
+/* Bottom Bar */
+.viewer-bottom-bar {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(4, 13, 26, 0.82);
+  border-radius: 8px;
+  border: 1px solid rgba(112, 169, 232, 0.14);
+  backdrop-filter: blur(8px);
+  font-size: 0.76rem;
+  color: #8faac7;
+  z-index: 10;
+}
+
+.legend-tag {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+.dot-green { background: #2ed573; box-shadow: 0 0 8px #2ed573; }
+.dot-red { background: #ff4757; box-shadow: 0 0 8px #ff4757; }
+.dot-cyan { background: #00d2d3; box-shadow: 0 0 8px #00d2d3; }
+
+/* Loading & Error Overlays */
+.viewer-overlay-message, .viewer-overlay-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: rgba(6, 9, 14, 0.85);
+  backdrop-filter: blur(6px);
+  z-index: 20;
+  color: #c7ddf5;
+  font-size: 0.9rem;
+}
+
+.viewer-overlay-error {
+  color: #ff8b9f;
+}
+
+.spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid rgba(112, 169, 232, 0.2);
+  border-top-color: #1f7aff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.anatomy-card-facts {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(112, 169, 232, 0.15);
+}
+
+.fact-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #14d3b0;
+  margin: 12px 0 3px 0;
+}
+
+.fact-desc {
+  font-size: 0.82rem;
+  color: #c7ddf5;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.readout {
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(1, 12, 24, 0.7);
+  border: 1px solid rgba(112, 169, 232, 0.18);
+  margin-bottom: 14px;
+}
+
+.readout.positive {
+  border-color: rgba(255, 71, 87, 0.4);
+  background: rgba(45, 12, 20, 0.6);
+}
+
+.readout.negative {
+  border-color: rgba(46, 213, 115, 0.4);
+  background: rgba(12, 38, 26, 0.6);
+}
+
+.readout-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.readout-score {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.readout.positive .readout-score { color: #ff6b81; }
+.readout.negative .readout-score { color: #2ed573; }
+
+.readout-meta {
+  font-size: 0.75rem;
+  color: #8faac7;
+  margin: 8px 0 0 0;
+}

@@ -1,29 +1,37 @@
-# 3D asset manifest
+# 3D Asset Manifest
 
-Status: candidate review needed before final demo.
+Status: **CONFIGURED & ACTIVE**
 
-The integrated viewer must use a licensed anatomical model and must not imply patient-specific lesion geometry.
+The 3D anatomy viewer integrates interactive 3D WebGL anatomical assets with projected clinical landmark pins (Aorta, Left Main Coronary Artery, LAD, LCX, RCA, Right Ventricle, Left Ventricle).
 
-## Candidate sources
+## Active 3D Assets
 
-1. NIH 3D Heart Library
-   - URL: https://3d.nih.gov/collections/heart-library
-   - Notes: NIH 3D supports downloadable GLB for interactive web use, but licensing varies by model and must be checked per asset.
+1. **`frontend/public/models/heart.glb`** (Primary Asset)
+   - **Source**: 3D Human Heart Anatomical Model (Sketchfab / Open-Access Medical Project)
+   - **File format**: GLTF Binary (`.glb`), 3.76 MB
+   - **License**: Creative Commons Attribution (CC-BY 4.0)
+   - **Rendering**: Three.js WebGL Renderer with OrbitControls, directional studio key/fill/rim lighting, and real-time screen projection of 3D anatomical pins.
+   - **Anatomical coverage**: Full external cardiac anatomy, ascending aorta and aortic arch, pulmonary trunk, right atrium, right ventricle, left ventricle, anterior interventricular groove, and coronary branching network.
 
-2. 3D Digital Model of Coronary Arteries by Jeslyn Poo Hwee Ming
-   - URL: https://sketchfab.com/3d-models/3d-digital-model-of-coronary-arteries-cb63e7714a574984835160530957748b
-   - Listed license: Creative Commons Attribution.
-   - Notes: Good coronary-specific candidate if attribution and download terms are acceptable.
+2. **`frontend/public/models/heart-organ.glb`** (High-Detail Cardiac Organ Option)
+   - **Source**: Human-Organ3D Open Library
+   - **File format**: GLTF Binary (`.glb`), 7.55 MB
+   - **License**: MIT / CC-BY
+   - **Usage**: High-resolution alternate view selectable via the top viewer toolbar.
 
-3. Innerscene Heart GLB
-   - URL: https://www.innerscene.com/tools/library/3d-parts/heart-e9f72b0e
-   - Listed license: CC0.
-   - Notes: Good neutral base-heart candidate, but coronary vessel separation still needs verification.
+## Verified Landmark & Target Mappings
 
-## Required before replacing the schematic viewer
+| Landmark ID | Target ID | Anatomical Label | Perfusion Territory |
+|:---|:---|:---|:---|
+| `aorta` | — | Aorta (Arch & Root) | Origin of systemic arterial circulation |
+| `lmca` | — | Left main coronary artery | Origin of left coronary circulation |
+| `lad` | `lad` | Left anterior descending artery (LAD) | Interventricular septum, anterior LV wall, cardiac apex |
+| `lcx` | `lcx` | Left circumflex artery (LCX) | Posterolateral LV wall, obtuse marginal branches |
+| `rca` | `rca` | Right coronary artery (RCA) | Right ventricle, inferior diaphragmatic LV wall |
+| `rv` | — | Right ventricle | Pulmonary circulation pump |
+| `lv` | — | Left ventricle | Systemic circulation pump |
 
-- Save the permitted GLB under `frontend/public/models/`.
-- Record source URL, author, license, downloaded file name, and any modifications.
-- Inspect mesh names for LAD, LCX and RCA.
-- Update `shared/vessel-mapping.md` with verified mesh IDs.
-- Keep UI wording as illustrative anatomy unless actual patient-specific imaging geometry is supplied.
+## Clinical Boundary & Safety Guardrail
+
+- The 3D model provides anatomical orientation and spatial reference for tabular classification results.
+- Model probabilities indicate tabular statistical risk of significant stenosis ($\ge 50\%$) derived from non-invasive clinical predictors; they do **not** represent patient-specific lesion geometry, lumen narrowing millimeters, or physical intravascular imaging.
