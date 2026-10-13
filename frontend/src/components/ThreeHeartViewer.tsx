@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { TargetId, TargetPrediction } from "../types/api";
 
@@ -162,45 +163,62 @@ export function ThreeHeartViewer({
     scene.add(heartGroup);
     heartGroupRef.current = heartGroup;
 
-    // Load Model
+    // Load Model with local DRACO decompression
     const loader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath("/draco/");
+    loader.setDRACOLoader(dracoLoader);
+
     const modelPath = modelChoice === "heart" ? "/models/heart.glb" : "/models/heart-organ.glb";
+
+    const loadSuccess = (gltf: any) => {
+      const root = gltf.scene;
+
+      // Auto-center and normalize size
+      const box = new THREE.Box3().setFromObject(root);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scale = 2.0 / (maxDim || 1);
+
+      root.position.sub(center);
+      root.scale.setScalar(scale);
+
+      // Ensure materials have rich lighting response
+      root.traverse((child: any) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          if (child.material) {
+            child.material.roughness = 0.38;
+            child.material.metalness = 0.12;
+          }
+        }
+      });
+
+      heartGroup.add(root);
+      setLoading(false);
+      setLoadError(null);
+    };
 
     loader.load(
       modelPath,
-      (gltf) => {
-        const root = gltf.scene;
-
-        // Auto-center and normalize size
-        const box = new THREE.Box3().setFromObject(root);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z);
-        const scale = 2.0 / (maxDim || 1);
-
-        root.position.sub(center);
-        root.scale.setScalar(scale);
-
-        // Ensure materials have rich lighting response
-        root.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-            if (child.material) {
-              child.material.roughness = 0.38;
-              child.material.metalness = 0.12;
-            }
-          }
-        });
-
-        heartGroup.add(root);
-        setLoading(false);
-      },
+      loadSuccess,
       undefined,
       (err) => {
-        console.error("Error loading GLB heart:", err);
-        setLoadError("Could not load 3D GLB model. Using procedural fallback.");
-        setLoading(false);
+        console.warn(`Error loading primary model ${modelPath}, trying alternate:`, err);
+        // Automatic fallback to uncompressed heart-organ.glb
+        const fallbackPath = "/models/heart-organ.glb";
+        loader.load(
+          fallbackPath,
+          loadSuccess,
+          undefined,
+          (err2) => {
+            console.error("Error loading fallback heart model:", err2);
+            setLoadError("Could not load 3D GLB model.");
+            setLoading(false);
+          }
+        );
       }
     );
 
@@ -269,6 +287,7 @@ export function ThreeHeartViewer({
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
       controls.dispose();
+      dracoLoader.dispose();
       container.replaceChildren();
     };
   }, [modelChoice, heartbeatActive]);
