@@ -47,17 +47,51 @@ export function AnatomyViewer({
   onSelect: (target: TargetId) => void;
   onApplyCaseFeatures?: (features: Record<string, number>) => void;
 }) {
+  const hasLivePredictions = !!predictions && Object.keys(predictions).length > 0;
+  const [mode, setMode] = useState<"live" | "preset">(hasLivePredictions ? "live" : "preset");
   const [selectedCaseId, setSelectedCaseId] = useState<string>("lad-isolated");
   const [activeTab, setActiveTab] = useState<"cases" | "details">("cases");
 
   const currentCase = CLINICAL_CASES.find((c) => c.id === selectedCaseId) || CLINICAL_CASES[0];
 
-  // If a case is selected, use its predictions for the 3D heart if live predictions not provided
-  const activePredictions = predictions || currentCase.predictions;
-  const activeStenosisTarget = currentCase.vessel !== "cad" ? currentCase.vessel : selected;
+  // Determine active predictions
+  const activePredictions = mode === "live" && predictions ? predictions : currentCase.predictions;
+
+  // Determine which vessel has the 3D problem (stenosis ring, slow flow, aura)
+  let activeStenosisTarget: TargetId | null = null;
+  let severityScore = 80;
+
+  if (mode === "preset") {
+    activeStenosisTarget = currentCase.vessel !== "cad" ? currentCase.vessel : selected;
+    severityScore = currentCase.stenosisSeverity;
+  } else if (predictions) {
+    // In live manual input mode:
+    // 1. If user selected a specific vessel and that vessel is positive -> show it
+    if (selected !== "cad" && predictions[selected]?.label === "positive") {
+      activeStenosisTarget = selected;
+      severityScore = Math.round((predictions[selected]?.probability || 0.8) * 100);
+    }
+    // 2. Or check which vessel has elevated risk
+    else if (predictions.lad?.label === "positive") {
+      activeStenosisTarget = "lad";
+      severityScore = Math.round((predictions.lad?.probability || 0.8) * 100);
+    } else if (predictions.lcx?.label === "positive") {
+      activeStenosisTarget = "lcx";
+      severityScore = Math.round((predictions.lcx?.probability || 0.8) * 100);
+    } else if (predictions.rca?.label === "positive") {
+      activeStenosisTarget = "rca";
+      severityScore = Math.round((predictions.rca?.probability || 0.8) * 100);
+    } else {
+      // All vessels normal (healthy heart)
+      activeStenosisTarget = null;
+      severityScore = 0;
+    }
+  }
+
   const activeDetail = vesselDetails[selected] ?? vesselDetails.lad;
 
   const handleSelectCase = (c: ClinicalCase) => {
+    setMode("preset");
     setSelectedCaseId(c.id);
     if (c.vessel !== "cad") {
       onSelect(c.vessel);
@@ -81,17 +115,43 @@ export function AnatomyViewer({
       <div className="cases-selector-bar panel">
         <div className="selector-header">
           <div>
-            <span className="case-tag">CLINICAL SCENARIO PRESETS</span>
-            <h4>Select an Artery Pathology Case to inspect 3D lesion & flow animation:</h4>
+            <span className="case-tag">DATA SOURCE & SCENARIO SELECTOR</span>
+            <h4>Choose between Live Manual Patient Inputs or Preset Clinical Scenarios:</h4>
           </div>
           <div className="active-case-badge">
-            <span className="live-dot" /> {currentCase.badge}
+            <span className="live-dot" />{" "}
+            {mode === "live"
+              ? activeStenosisTarget
+                ? `Live Patient: ${activeStenosisTarget.toUpperCase()} Stenosis (${severityScore}%)`
+                : "Live Patient: Normal Patent (0% Stenosis)"
+              : currentCase.badge}
           </div>
         </div>
 
         <div className="cases-pill-list">
+          {/* Live Patient Pill */}
+          <button
+            type="button"
+            className={`case-pill-button ${mode === "live" ? "active is-live-pill" : ""}`}
+            onClick={() => setMode("live")}
+            title="Inspect 3D heart with your manual analysis inputs"
+          >
+            <div className="pill-top">
+              <span className="pill-vessel">🟢 Live Manual Analysis</span>
+              <span className="pill-badge badge-cad">ACTIVE PATIENT</span>
+            </div>
+            <div className="pill-sub">
+              {hasLivePredictions
+                ? activeStenosisTarget
+                  ? `⚠ ${activeStenosisTarget.toUpperCase()} Problem Detected`
+                  : "✓ Normal / All Vessels Patent"
+                : "Awaiting New Analysis"}
+            </div>
+          </button>
+
+          {/* Preset Clinical Cases */}
           {CLINICAL_CASES.map((c) => {
-            const isCaseActive = c.id === selectedCaseId;
+            const isCaseActive = mode === "preset" && c.id === selectedCaseId;
             return (
               <button
                 key={c.id}
@@ -120,7 +180,7 @@ export function AnatomyViewer({
             selected={selected}
             onSelect={onSelect}
             stenosisVessel={activeStenosisTarget}
-            stenosisSeverity={currentCase.stenosisSeverity}
+            stenosisSeverity={severityScore}
           />
         </div>
 
@@ -132,7 +192,7 @@ export function AnatomyViewer({
               className={activeTab === "cases" ? "active" : ""}
               onClick={() => setActiveTab("cases")}
             >
-              Active Case Analysis
+              {mode === "live" ? "Live Patient Findings" : "Scenario Analysis"}
             </button>
             <button
               type="button"
@@ -146,23 +206,37 @@ export function AnatomyViewer({
           {activeTab === "cases" ? (
             <div className="case-analysis-content">
               <div className="case-title-box">
-                <p className="eyebrow">PATHOLOGY PROFILE</p>
-                <h3>{currentCase.name}</h3>
-                <p className="case-desc">{currentCase.description}</p>
+                <p className="eyebrow">
+                  {mode === "live" ? "ACTIVE PATIENT EVALUATION" : "PATHOLOGY PROFILE"}
+                </p>
+                <h3>
+                  {mode === "live"
+                    ? activeStenosisTarget
+                      ? `Active Patient: Significant ${activeStenosisTarget.toUpperCase()} Stenosis`
+                      : "Active Patient: Normal Coronary Circulation"
+                    : currentCase.name}
+                </h3>
+                <p className="case-desc">
+                  {mode === "live"
+                    ? activeStenosisTarget
+                      ? `Based on manual clinical features, the model classifies ${activeStenosisTarget.toUpperCase()} with elevated risk (${severityScore}%). Flashing yellow plaque ring and slowed hypoxic blood flow illustrate the lesion in 3D.`
+                      : "Patient features reflect low risk across all epicardial distributions. Blood flow in the 3D heart moves rapidly in uniform oxygenated red without obstruction."
+                    : currentCase.description}
+                </p>
               </div>
 
               {/* Stenosis Severity Meter */}
               <div className="severity-meter-box">
                 <div className="meter-label">
-                  <span>Luminal Stenosis Diameter</span>
-                  <strong className={currentCase.stenosisSeverity >= 70 ? "text-danger" : "text-success"}>
-                    {currentCase.stenosisSeverity}% Luminal Occlusion
+                  <span>Luminal Stenosis Severity</span>
+                  <strong className={severityScore >= 50 ? "text-danger" : "text-success"}>
+                    {severityScore}% {severityScore >= 50 ? "Luminal Stenosis" : "Normal Caliber"}
                   </strong>
                 </div>
                 <div className="meter-track">
                   <div
-                    className={`meter-fill ${currentCase.stenosisSeverity >= 70 ? "fill-danger" : "fill-success"}`}
-                    style={{ width: `${currentCase.stenosisSeverity}%` }}
+                    className={`meter-fill ${severityScore >= 50 ? "fill-danger" : "fill-success"}`}
+                    style={{ width: `${Math.max(severityScore, 4)}%` }}
                   />
                 </div>
               </div>
@@ -171,19 +245,31 @@ export function AnatomyViewer({
               <div className="case-highlights-grid">
                 <div className="highlight-item">
                   <span className="hl-label">Perfusion Zone</span>
-                  <span className="hl-val">{currentCase.perfusionTerritory}</span>
+                  <span className="hl-val">
+                    {mode === "live"
+                      ? activeStenosisTarget
+                        ? vesselDetails[activeStenosisTarget].perfusion
+                        : "Physiological uniform perfusion across LV & RV"
+                      : currentCase.perfusionTerritory}
+                  </span>
                 </div>
                 <div className="highlight-item">
-                  <span className="hl-label">ECG / Echo Finding</span>
-                  <span className="hl-val">{currentCase.ecgFinding}</span>
+                  <span className="hl-label">ECG / Echo Correlate</span>
+                  <span className="hl-val">
+                    {mode === "live"
+                      ? "Derived from patient input parameters (RWMA, ST deviation, EF-TTE)"
+                      : currentCase.ecgFinding}
+                  </span>
                 </div>
                 <div className="highlight-item">
-                  <span className="hl-label">Clinical Presentation</span>
-                  <span className="hl-val">{currentCase.clinicalPresentation}</span>
-                </div>
-                <div className="highlight-item">
-                  <span className="hl-label">Hemodynamic Impact</span>
-                  <span className="hl-val">{currentCase.hemodynamicEffect}</span>
+                  <span className="hl-label">Clinical Implication</span>
+                  <span className="hl-val">
+                    {mode === "live"
+                      ? severityScore >= 50
+                        ? "Urgent consideration for diagnostic coronary angiography or CCTA."
+                        : "Conservative management; monitor risk factors."
+                      : currentCase.hemodynamicEffect}
+                  </span>
                 </div>
               </div>
 
@@ -244,9 +330,7 @@ export function AnatomyViewer({
         <aside className="panel asset-panel">
           <p className="eyebrow">3D PATHOLOGY ANIMATION ENGINE</p>
           <h3>How to Read the 3D Problem Simulation</h3>
-          <p>
-            The viewer visualizes coronary artery problems in real-time WebGL:
-          </p>
+          <p>The viewer visualizes coronary artery problems in real-time WebGL:</p>
           <ul className="pathology-legend-list">
             <li>
               <div className="legend-indicator ring-indicator" />
@@ -306,9 +390,7 @@ function VesselReadout({
         <span className={isPos ? "status-positive" : "status-negative"}>
           {isPos ? "Elevated Stenosis Risk" : "Low / Normal Risk"}
         </span>
-        <strong className="readout-score">
-          {Math.round(prediction.probability * 100)}%
-        </strong>
+        <strong className="readout-score">{Math.round(prediction.probability * 100)}%</strong>
       </div>
       <p className="readout-meta">
         Decision Threshold: {prediction.threshold != null ? `${(prediction.threshold * 100).toFixed(0)}%` : "0.50 default"} | Model

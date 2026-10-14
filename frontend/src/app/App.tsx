@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnatomyViewer } from "../pages/AnatomyViewer";
-import { BodyParts3DViewer } from "../pages/BodyParts3DViewer";
+import { AdminRecords, type StoredPatientRecord } from "../pages/AdminRecords";
 import { ModelQuality } from "../pages/ModelQuality";
 import { ThreeHeartViewer } from "../components/ThreeHeartViewer";
 import { Disclaimer } from "../components/Disclaimer";
@@ -8,12 +8,13 @@ import { PatientDataForm } from "../components/PatientDataForm";
 import { PredictionCard } from "../components/PredictionCard";
 import { FeatureExplanation } from "../components/FeatureExplanation";
 import { ClinicalReportModal } from "../components/ClinicalReportModal";
+import { MedicalDocumentExtractor } from "../components/MedicalDocumentExtractor";
 import { CLINICAL_CASES } from "../data/clinicalCases";
 import { defaultFeatureValues, featureGroups, featureManifest } from "../data/featureManifest";
 import { requestPrediction } from "../services/api";
 import type { PredictionResponse, TargetId } from "../types/api";
 
-type Page = "overview" | "analysis" | "anatomy" | "bodyparts3d" | "quality";
+type Page = "overview" | "analysis" | "anatomy" | "admin" | "quality";
 
 const targetLabels: Record<TargetId, string> = {
   cad: "Overall CAD",
@@ -31,6 +32,10 @@ export function App() {
   const [loading, setLoading] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
 
+  // Active patient metadata for report
+  const [reportPatientFeatures, setReportPatientFeatures] = useState<Record<string, number>>(features);
+  const [reportPatientPrediction, setReportPatientPrediction] = useState<PredictionResponse | null>(prediction);
+
   const selectedFeatures = useMemo(() => {
     if (page === "analysis") return featureManifest;
     return featureManifest.filter((feature) => feature.group === "Profile" || feature.group === "Symptoms");
@@ -42,6 +47,51 @@ export function App() {
     try {
       const result = await requestPrediction(features);
       setPrediction(result);
+      setReportPatientFeatures(features);
+      setReportPatientPrediction(result);
+
+      // Auto-save this patient analysis to Admin patient records vault
+      try {
+        const storedStr = localStorage.getItem("cardiovision_patient_records");
+        const existing: StoredPatientRecord[] = storedStr ? JSON.parse(storedStr) : [];
+        const pid = `CV-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+        const cadProb = Math.round((result.predictions.cad?.probability || 0) * 100);
+        const ladProb = Math.round((result.predictions.lad?.probability || 0) * 100);
+        const lcxProb = Math.round((result.predictions.lcx?.probability || 0) * 100);
+        const rcaProb = Math.round((result.predictions.rca?.probability || 0) * 100);
+
+        let primaryFinding = "Normal / Low Stenosis Risk";
+        if (ladProb >= 50) primaryFinding = "LAD (Anterior Infarct Risk)";
+        else if (lcxProb >= 50) primaryFinding = "LCX (Lateral Wall Ischemia)";
+        else if (rcaProb >= 50) primaryFinding = "RCA (Inferior Infarct Risk)";
+        else if (cadProb >= 50) primaryFinding = "CAD (Multi-Vessel Atherosclerosis)";
+
+        const newRecord: StoredPatientRecord = {
+          id: pid,
+          name: `Manual Entry Patient (${features.Sex === 0 ? "F" : "M"}, ${features.Age || 58}y)`,
+          date: new Date().toISOString().replace("T", " ").slice(0, 16),
+          age: features.Age || 58,
+          sex: features.Sex === 0 ? "Female" : "Male",
+          bp: features.BP || 130,
+          pr: features.PR || 76,
+          ef: features["EF-TTE"] || 55,
+          typicalChestPain: !!features["Typical Chest Pain"],
+          cadScore: cadProb,
+          cadStatus: cadProb >= 50 ? "Elevated" : "Normal",
+          ladScore: ladProb,
+          lcxScore: lcxProb,
+          rcaScore: rcaProb,
+          primaryRiskVessel: primaryFinding,
+          features: { ...features },
+          predictions: result,
+        };
+
+        const updated = [newRecord, ...existing.filter((r) => r.id !== pid)];
+        localStorage.setItem("cardiovision_patient_records", JSON.stringify(updated));
+      } catch (e) {
+        console.warn("Could not auto-archive patient analysis:", e);
+      }
+
       setPage("overview");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Prediction failed.");
@@ -52,6 +102,29 @@ export function App() {
 
   const applyPreset = (presetFeatures: Record<string, number>) => {
     setFeatures({ ...defaultFeatureValues(), ...presetFeatures });
+  };
+
+  const handleOpenCurrentReport = () => {
+    setReportPatientFeatures(features);
+    setReportPatientPrediction(prediction);
+    setIsReportOpen(true);
+  };
+
+  const handleOpenSpecificReport = (feats: Record<string, number>, pred: PredictionResponse) => {
+    setReportPatientFeatures(feats);
+    setReportPatientPrediction(pred);
+    setIsReportOpen(true);
+  };
+
+  const handleLoadPatientIntoViewer = (record: StoredPatientRecord) => {
+    setFeatures(record.features);
+    setPrediction(record.predictions);
+    if (record.ladScore >= 50) setSelectedTarget("lad");
+    else if (record.lcxScore >= 50) setSelectedTarget("lcx");
+    else if (record.rcaScore >= 50) setSelectedTarget("rca");
+    else setSelectedTarget("cad");
+
+    setPage("anatomy");
   };
 
   return (
@@ -74,8 +147,8 @@ export function App() {
           <button className={page === "anatomy" ? "active" : ""} onClick={() => setPage("anatomy")}>
             3D Viewer
           </button>
-          <button className={page === "bodyparts3d" ? "active" : ""} onClick={() => setPage("bodyparts3d")}>
-            BodyParts3D (DBCLS)
+          <button className={page === "admin" ? "active" : ""} onClick={() => setPage("admin")}>
+            Patient Records (Admin)
           </button>
           <button className={page === "quality" ? "active" : ""} onClick={() => setPage("quality")}>
             Model Quality
@@ -86,7 +159,7 @@ export function App() {
           <button
             type="button"
             className="sidebar-export-btn"
-            onClick={() => setIsReportOpen(true)}
+            onClick={handleOpenCurrentReport}
             title="Generate printable clinical decision summary"
           >
             📄 Export Clinical Report
@@ -110,7 +183,7 @@ export function App() {
             <button
               type="button"
               className="export-report-btn"
-              onClick={() => setIsReportOpen(true)}
+              onClick={handleOpenCurrentReport}
             >
               🖨 Generate Report
             </button>
@@ -125,7 +198,7 @@ export function App() {
             onSelectTarget={setSelectedTarget}
             onNewAnalysis={() => setPage("analysis")}
             onOpenViewer={() => setPage("anatomy")}
-            onOpenReport={() => setIsReportOpen(true)}
+            onOpenReport={handleOpenCurrentReport}
             loading={loading}
             error={error}
           />
@@ -182,6 +255,74 @@ export function App() {
               </div>
             </div>
 
+            {/* Medical Document OCR & Report Extractor Dropzone */}
+            <MedicalDocumentExtractor
+              onApplyData={(extracted) => {
+                setFeatures((prev) => ({ ...prev, ...extracted }));
+              }}
+            />
+
+            {/* Manual Clinical Values Guide (Explicit Values to Trigger 3D Pathology) */}
+            <div className="panel clinical-guide-panel">
+              <div className="guide-header">
+                <span className="badge-official">💡 Clinician Input Guide</span>
+                <h4>Exact Values to Enter Manually to Trigger 3D Pathology:</h4>
+              </div>
+              <div className="guide-grid">
+                <div className="guide-card card-lad">
+                  <strong>🔴 To Trigger LAD Stenosis (Anterior Wall Infarct):</strong>
+                  <ul>
+                    <li><strong>Typical Chest Pain:</strong> Yes (1)</li>
+                    <li><strong>Regional Wall Motion (RWMA):</strong> 2 or 3</li>
+                    <li><strong>ECG ST Elevation:</strong> Yes (1)</li>
+                    <li><strong>Age:</strong> 64–70 years</li>
+                    <li><strong>Echo Ejection Fraction (EF-TTE):</strong> 35%</li>
+                  </ul>
+                  <small>↳ Triggers flashing yellow plaque ring on LAD + hypoxic cyan slowed flow.</small>
+                </div>
+
+                <div className="guide-card card-lcx">
+                  <strong>🟠 To Trigger LCX Stenosis (Lateral Wall Ischemia):</strong>
+                  <ul>
+                    <li><strong>Age:</strong> 72 years</li>
+                    <li><strong>Sex:</strong> Male (1)</li>
+                    <li><strong>Typical Chest Pain:</strong> Yes (1)</li>
+                    <li><strong>Non-Anginal / Atypical:</strong> Yes (1)</li>
+                    <li><strong>Weak Peripheral Pulse:</strong> No (0)</li>
+                    <li><strong>Dyslipidemia (DLP):</strong> Yes (1)</li>
+                  </ul>
+                  <small>↳ Triggers plaque ring and hypoxic flow across lateral obtuse marginal branch.</small>
+                </div>
+
+                <div className="guide-card card-rca">
+                  <strong>🟢 To Trigger RCA Stenosis (Inferior Wall Ischemia):</strong>
+                  <ul>
+                    <li><strong>Age:</strong> 72 years</li>
+                    <li><strong>Sex:</strong> Male (1)</li>
+                    <li><strong>Diabetes Mellitus (DM):</strong> Yes (1)</li>
+                    <li><strong>Hypertension (HTN):</strong> Yes (1)</li>
+                    <li><strong>ESR (Inflammation):</strong> 38 mm/hr</li>
+                    <li><strong>Typical Chest Pain:</strong> No (0)</li>
+                  </ul>
+                  <small>↳ Triggers plaque ring on right coronary groove + diaphragmatic hypoxia aura.</small>
+                </div>
+
+                <div className="guide-card card-normal">
+                  <strong>⚪ To Show Normal Healthy Heart (0% Stenosis):</strong>
+                  <ul>
+                    <li><strong>Age:</strong> 35–40 years</li>
+                    <li><strong>Sex:</strong> Female (0)</li>
+                    <li><strong>Typical Chest Pain:</strong> No (0)</li>
+                    <li><strong>Dyspnea:</strong> No (0)</li>
+                    <li><strong>Echo Ejection Fraction (EF-TTE):</strong> 62%</li>
+                    <li><strong>ST Elevation / RWMA:</strong> No (0)</li>
+                  </ul>
+                  <small>↳ All blockage rings disappear; blood particles flow at full speed in pure red.</small>
+                </div>
+              </div>
+            </div>
+
+            {/* 52 Clinical Parameters Form */}
             {featureGroups.map((group) => (
               <section className="panel feature-section" key={group}>
                 <div className="section-title-row">
@@ -221,7 +362,12 @@ export function App() {
           />
         )}
 
-        {page === "bodyparts3d" && <BodyParts3DViewer />}
+        {page === "admin" && (
+          <AdminRecords
+            onLoadPatientIntoViewer={handleLoadPatientIntoViewer}
+            onOpenReportModal={handleOpenSpecificReport}
+          />
+        )}
 
         {page === "quality" && <ModelQuality />}
 
@@ -232,8 +378,8 @@ export function App() {
       <ClinicalReportModal
         isOpen={isReportOpen}
         onClose={() => setIsReportOpen(false)}
-        prediction={prediction}
-        features={features}
+        prediction={reportPatientPrediction}
+        features={reportPatientFeatures}
       />
     </div>
   );
