@@ -16,10 +16,18 @@ export interface TargetPrediction {
   class_probabilities?: Record<string, number>;
 }
 
+export interface FeatureFactor {
+  feature: string;
+  impact: number;
+  direction: "increases_risk" | "decreases_risk" | "risk" | "protective";
+}
+
 export interface TargetExplanation {
   status: "available" | "unavailable";
   method: string;
   message?: string;
+  top_risk_factors?: FeatureFactor[];
+  top_protective_factors?: FeatureFactor[];
 }
 
 export interface PredictionResponse {

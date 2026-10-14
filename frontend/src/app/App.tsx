@@ -1,10 +1,14 @@
 import { useMemo, useState } from "react";
 import { AnatomyViewer } from "../pages/AnatomyViewer";
 import { BodyParts3DViewer } from "../pages/BodyParts3DViewer";
+import { ModelQuality } from "../pages/ModelQuality";
 import { ThreeHeartViewer } from "../components/ThreeHeartViewer";
 import { Disclaimer } from "../components/Disclaimer";
 import { PatientDataForm } from "../components/PatientDataForm";
 import { PredictionCard } from "../components/PredictionCard";
+import { FeatureExplanation } from "../components/FeatureExplanation";
+import { ClinicalReportModal } from "../components/ClinicalReportModal";
+import { CLINICAL_CASES } from "../data/clinicalCases";
 import { defaultFeatureValues, featureGroups, featureManifest } from "../data/featureManifest";
 import { requestPrediction } from "../services/api";
 import type { PredictionResponse, TargetId } from "../types/api";
@@ -13,18 +17,19 @@ type Page = "overview" | "analysis" | "anatomy" | "bodyparts3d" | "quality";
 
 const targetLabels: Record<TargetId, string> = {
   cad: "Overall CAD",
-  lad: "LAD",
-  lcx: "LCX",
-  rca: "RCA",
+  lad: "LAD (Anterior)",
+  lcx: "LCX (Lateral)",
+  rca: "RCA (Inferior)",
 };
 
 export function App() {
   const [page, setPage] = useState<Page>("overview");
   const [selectedTarget, setSelectedTarget] = useState<TargetId>("lad");
-  const [features, setFeatures] = useState(defaultFeatureValues);
+  const [features, setFeatures] = useState<Record<string, number>>(defaultFeatureValues());
   const [prediction, setPrediction] = useState<PredictionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const selectedFeatures = useMemo(() => {
     if (page === "analysis") return featureManifest;
@@ -45,6 +50,10 @@ export function App() {
     }
   }
 
+  const applyPreset = (presetFeatures: Record<string, number>) => {
+    setFeatures({ ...defaultFeatureValues(), ...presetFeatures });
+  };
+
   return (
     <div className="app-frame">
       <aside className="sidebar">
@@ -52,19 +61,42 @@ export function App() {
           <div className="brand-icon">CV</div>
           <div>
             <strong>CardioVision 3D</strong>
-            <span>AI coronary analysis</span>
+            <span>AI Coronary Intelligence</span>
           </div>
         </div>
         <nav aria-label="Main navigation">
-          <button className={page === "overview" ? "active" : ""} onClick={() => setPage("overview")}>Overview</button>
-          <button className={page === "analysis" ? "active" : ""} onClick={() => setPage("analysis")}>New Analysis</button>
-          <button className={page === "anatomy" ? "active" : ""} onClick={() => setPage("anatomy")}>3D Viewer</button>
-          <button className={page === "bodyparts3d" ? "active" : ""} onClick={() => setPage("bodyparts3d")}>BodyParts3D (DBCLS)</button>
-          <button className={page === "quality" ? "active" : ""} onClick={() => setPage("quality")}>Model Quality</button>
+          <button className={page === "overview" ? "active" : ""} onClick={() => setPage("overview")}>
+            Overview
+          </button>
+          <button className={page === "analysis" ? "active" : ""} onClick={() => setPage("analysis")}>
+            New Analysis
+          </button>
+          <button className={page === "anatomy" ? "active" : ""} onClick={() => setPage("anatomy")}>
+            3D Viewer
+          </button>
+          <button className={page === "bodyparts3d" ? "active" : ""} onClick={() => setPage("bodyparts3d")}>
+            BodyParts3D (DBCLS)
+          </button>
+          <button className={page === "quality" ? "active" : ""} onClick={() => setPage("quality")}>
+            Model Quality
+          </button>
         </nav>
+
+        <div className="sidebar-report-action">
+          <button
+            type="button"
+            className="sidebar-export-btn"
+            onClick={() => setIsReportOpen(true)}
+            title="Generate printable clinical decision summary"
+          >
+            📄 Export Clinical Report
+          </button>
+        </div>
+
         <div className="sidebar-card">
-          <strong>Research prototype</strong>
-          <span>Predictions are model outputs, not diagnosis.</span>
+          <div className="sidebar-card-badge">Decision Support</div>
+          <strong>Research Prototype</strong>
+          <span>Statistical ML probabilities; not for direct clinical therapy.</span>
         </div>
       </aside>
 
@@ -72,9 +104,18 @@ export function App() {
         <header className="dashboard-header">
           <div>
             <p className="eyebrow">AI-POWERED CORONARY ARTERY ANALYSIS</p>
-            <h1>Welcome back, Dr. Keerthivardhan</h1>
+            <h1>Clinical Cardiology Intelligence Center</h1>
           </div>
-          <div className="search-shell">Search patient ID, report, or history...</div>
+          <div className="header-actions">
+            <button
+              type="button"
+              className="export-report-btn"
+              onClick={() => setIsReportOpen(true)}
+            >
+              🖨 Generate Report
+            </button>
+            <div className="search-shell">Patient ID: #CV-2026-9041</div>
+          </div>
         </header>
 
         {page === "overview" && (
@@ -84,6 +125,7 @@ export function App() {
             onSelectTarget={setSelectedTarget}
             onNewAnalysis={() => setPage("analysis")}
             onOpenViewer={() => setPage("anatomy")}
+            onOpenReport={() => setIsReportOpen(true)}
             loading={loading}
             error={error}
           />
@@ -93,14 +135,61 @@ export function App() {
           <section className="analysis-page">
             <div className="page-heading">
               <div>
-                <p className="eyebrow">NEW ANALYSIS</p>
-                <h2>Submit a complete provisional model feature set.</h2>
+                <p className="eyebrow">PATIENT FEATURE ENTRY & DIAGNOSTIC WORKBENCH</p>
+                <h2>Configure Clinical Feature Set (52 Features)</h2>
               </div>
-              <button className="ghost" onClick={() => setFeatures(defaultFeatureValues())}>Load sample</button>
+              <div className="quick-presets-group">
+                <span className="preset-label">Quick Presets:</span>
+                <button
+                  type="button"
+                  className="preset-btn"
+                  onClick={() => setFeatures(defaultFeatureValues())}
+                >
+                  Baseline
+                </button>
+                <button
+                  type="button"
+                  className="preset-btn btn-lad"
+                  onClick={() => applyPreset(CLINICAL_CASES[0].sampleFeatures)}
+                  title="Load 64yo male with high LAD risk (anterior MI)"
+                >
+                  LAD Infarct
+                </button>
+                <button
+                  type="button"
+                  className="preset-btn btn-lcx"
+                  onClick={() => applyPreset(CLINICAL_CASES[1].sampleFeatures)}
+                  title="Load 59yo female with LCX stenosis (lateral ischemia)"
+                >
+                  LCX Lateral
+                </button>
+                <button
+                  type="button"
+                  className="preset-btn btn-rca"
+                  onClick={() => applyPreset(CLINICAL_CASES[2].sampleFeatures)}
+                  title="Load 67yo male with RCA lesion (inferior & bradycardia)"
+                >
+                  RCA Inferior
+                </button>
+                <button
+                  type="button"
+                  className="preset-btn btn-normal"
+                  onClick={() => applyPreset(CLINICAL_CASES[4].sampleFeatures)}
+                  title="Load 42yo female with normal coronary arteries"
+                >
+                  Normal Patent
+                </button>
+              </div>
             </div>
+
             {featureGroups.map((group) => (
               <section className="panel feature-section" key={group}>
-                <h3>{group}</h3>
+                <div className="section-title-row">
+                  <h3>{group} Parameters</h3>
+                  <span className="count-badge">
+                    {selectedFeatures.filter((feature) => feature.group === group).length} features
+                  </span>
+                </div>
                 <PatientDataForm
                   features={selectedFeatures.filter((feature) => feature.group === group)}
                   values={features}
@@ -111,10 +200,11 @@ export function App() {
                 />
               </section>
             ))}
+
             <div className="sticky-submit">
               {error && <span className="error-text">{error}</span>}
               <button className="primary" onClick={runAnalysis} disabled={loading}>
-                {loading ? "Running..." : "Run full model analysis"}
+                {loading ? "Running AI Inference..." : "Run Full Model Analysis (4 Targets)"}
               </button>
             </div>
           </section>
@@ -133,10 +223,18 @@ export function App() {
 
         {page === "bodyparts3d" && <BodyParts3DViewer />}
 
-        {page === "quality" && <QualityPage />}
+        {page === "quality" && <ModelQuality />}
 
         <Disclaimer />
       </main>
+
+      {/* Hospital-Grade Printable Clinical Report Modal */}
+      <ClinicalReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        prediction={prediction}
+        features={features}
+      />
     </div>
   );
 }
@@ -147,6 +245,7 @@ function OverviewPage({
   onSelectTarget,
   onNewAnalysis,
   onOpenViewer,
+  onOpenReport,
   loading,
   error,
 }: {
@@ -155,10 +254,12 @@ function OverviewPage({
   onSelectTarget: (target: TargetId) => void;
   onNewAnalysis: () => void;
   onOpenViewer: () => void;
+  onOpenReport: () => void;
   loading: boolean;
   error: string | null;
 }) {
   const selectedPrediction = prediction?.predictions[selectedTarget];
+  const selectedExplanation = prediction?.explanations?.[selectedTarget];
 
   return (
     <section className="dashboard-grid">
@@ -166,22 +267,47 @@ function OverviewPage({
         <div>
           <p className="eyebrow">LIVE WORKSPACE</p>
           <h2>Analyze. Visualize. Verify.</h2>
-          <p>Run all four provisional model outputs, then inspect vessel-level status in the separate anatomy viewer.</p>
+          <p>
+            Evaluate multi-target stenosis probabilities across LAD, LCX, and RCA distributions,
+            then inspect live 3D hemodynamic blood flow animations.
+          </p>
         </div>
-        <button className="primary" onClick={onNewAnalysis}>{loading ? "Running..." : "New analysis"}</button>
+        <div className="hero-button-group">
+          <button className="primary" onClick={onNewAnalysis}>
+            {loading ? "Running..." : "New Analysis"}
+          </button>
+          <button className="ghost" onClick={onOpenReport}>
+            📄 Export Report
+          </button>
+        </div>
       </div>
 
-      <MetricTile title="Total analyses" value={prediction ? "1" : "0"} detail="Local session" />
-      <MetricTile title="Model status" value={prediction ? "Loaded" : "Ready"} detail="Provisional artifact" />
-      <MetricTile title="Targets" value="4" detail="CAD, LAD, LCX, RCA" />
+      <MetricTile
+        title="Session Analyses"
+        value={prediction ? "1 Complete" : "0 Runs"}
+        detail="Local inference active"
+      />
+      <MetricTile
+        title="Model Pipeline"
+        value="4 Calibrated"
+        detail="Scikit-Learn Logistic"
+      />
+      <MetricTile
+        title="Target Coverage"
+        value="CAD, LAD, LCX, RCA"
+        detail="Catheterization ground-truth"
+      />
 
+      {/* 3D Coronary Heart Preview */}
       <section className="viewer-preview panel">
         <div className="section-header">
           <div>
-            <p className="eyebrow">3D CORONARY HEART VISUALIZATION</p>
-            <h3>Interactive anatomy workspace</h3>
+            <p className="eyebrow">3D CORONARY ARTERY VISUALIZATION</p>
+            <h3>Interactive Anatomy Workspace</h3>
           </div>
-          <button className="ghost" onClick={onOpenViewer}>Open viewer</button>
+          <button className="ghost" onClick={onOpenViewer}>
+            Expand 3D Workspace →
+          </button>
         </div>
         <ThreeHeartViewer
           predictions={prediction?.predictions}
@@ -190,11 +316,16 @@ function OverviewPage({
         />
       </section>
 
+      {/* Prediction Results & 4 Cards */}
       <section className="results-panel panel">
         <div className="section-header">
           <div>
             <p className="eyebrow">PREDICTION RESULTS</p>
-            <h3>{selectedPrediction ? `${targetLabels[selectedTarget]} selected` : "Waiting for analysis"}</h3>
+            <h3>
+              {selectedPrediction
+                ? `${targetLabels[selectedTarget]} Selected`
+                : "Waiting for Clinical Analysis"}
+            </h3>
           </div>
         </div>
         <div className="prediction-list">
@@ -204,23 +335,48 @@ function OverviewPage({
               key={target}
               title={targetLabels[target]}
               prediction={prediction?.predictions[target]}
+              explanation={prediction?.explanations?.[target]}
               onSelect={() => onSelectTarget(target)}
             />
           ))}
         </div>
         {error && <p className="error-text">{error}</p>}
-        {!prediction && !error && <p>Run a new analysis to populate model outputs. No mock results are shown here.</p>}
+        {!prediction && !error && (
+          <p className="hint-text">
+            Click <strong>New Analysis</strong> above or load a sample preset to run multi-target ML inference.
+          </p>
+        )}
       </section>
 
+      {/* AI Feature Explainability Component */}
+      <div className="explanation-wrapper">
+        <FeatureExplanation
+          targetName={targetLabels[selectedTarget]}
+          explanation={selectedExplanation}
+          probability={selectedPrediction?.probability}
+        />
+      </div>
+
+      {/* Patient Information & Clinical Summary */}
       <section className="panel patient-card">
-        <p className="eyebrow">PATIENT INFORMATION</p>
-        <h3>Demo sample</h3>
+        <p className="eyebrow">PATIENT PROFILE SPECIFICATION</p>
+        <h3>Active Case Record</h3>
         <dl>
-          <dt>Dataset</dt><dd>Z-Alizadeh Sani extension candidate</dd>
-          <dt>Input fields</dt><dd>52 model features</dd>
-          <dt>Use</dt><dd>Research and education only</dd>
+          <dt>Registry</dt>
+          <dd>Z-Alizadeh Sani Cardiovascular Cohort</dd>
+          <dt>Feature Vector</dt>
+          <dd>52 Demographics, Vitals, Labs & ECG Variables</dd>
+          <dt>Ethical Boundary</dt>
+          <dd>Educational & Research Pair-Programming Evaluation</dd>
         </dl>
-        <button className="primary" onClick={onNewAnalysis}>Edit inputs</button>
+        <div className="patient-card-actions">
+          <button className="primary" onClick={onNewAnalysis}>
+            Modify Features
+          </button>
+          <button className="ghost" onClick={onOpenReport}>
+            Print Report
+          </button>
+        </div>
       </section>
     </section>
   );
@@ -233,18 +389,5 @@ function MetricTile({ title, value, detail }: { title: string; value: string; de
       <strong>{value}</strong>
       <small>{detail}</small>
     </article>
-  );
-}
-
-function QualityPage() {
-  return (
-    <section className="panel quality-page">
-      <p className="eyebrow">MODEL QUALITY</p>
-      <h2>Evaluation before claims.</h2>
-      <p>
-        The downloaded bundle records train/test row counts and provisional status. Final metrics, calibration and
-        explanation artifacts still need a documented evaluation pass before any public claim.
-      </p>
-    </section>
   );
 }

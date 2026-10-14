@@ -119,10 +119,89 @@ def _required_features(bundle: dict[str, Any]) -> set[str]:
     }
 
 
+def _normalize_features(raw_features: dict[str, Any]) -> dict[str, Any]:
+    normalized = dict(raw_features)
+    # Normalize Sex
+    if "Sex" in normalized:
+        v = str(normalized["Sex"]).strip().lower()
+        if v in ("male", "m", "1"):
+            normalized["Sex"] = 1
+        elif v in ("female", "fmale", "f", "0"):
+            normalized["Sex"] = 0
+
+    # Normalize generic binary/categorical Yes/No strings
+    for k, v in list(normalized.items()):
+        if isinstance(v, str):
+            v_clean = v.strip().lower()
+            if v_clean in ("y", "yes", "true", "positive"):
+                normalized[k] = 1
+            elif v_clean in ("n", "no", "false", "negative"):
+                normalized[k] = 0
+
+    return normalized
+
+
+def _compute_explanations(model: Any, row: pd.DataFrame) -> dict[str, Any]:
+    try:
+        pre = model.named_steps.get("preprocessor")
+        clf = model.named_steps.get("classifier")
+        if not pre or not clf or not hasattr(clf, "coef_"):
+            return {
+                "status": "unavailable",
+                "method": "not_configured",
+                "message": "Feature explanations not available for this model type.",
+            }
+
+        x_trans = pre.transform(row)
+        if hasattr(x_trans, "toarray"):
+            x_trans = x_trans.toarray()
+        out_names = pre.get_feature_names_out()
+        coefs = clf.coef_[0]
+        contribs = x_trans[0] * coefs
+
+        def clean_feature_label(name: str) -> str:
+            cleaned = name.replace("numeric__", "").replace("categorical__", "")
+            cleaned = cleaned.replace("_Y", "").replace("_Male", " (Male)")
+            return cleaned
+
+        paired = [
+            (clean_feature_label(name), float(val))
+            for name, val in zip(out_names, contribs)
+            if abs(val) > 0.001
+        ]
+        paired.sort(key=lambda item: item[1], reverse=True)
+
+        top_risk = [
+            {"feature": f, "impact": round(v, 2), "direction": "increases_risk"}
+            for f, v in paired
+            if v > 0
+        ][:4]
+        top_protective = [
+            {"feature": f, "impact": round(abs(v), 2), "direction": "decreases_risk"}
+            for f, v in paired
+            if v < 0
+        ][-4:]
+
+        return {
+            "status": "available",
+            "method": "linear_log_odds",
+            "top_risk_factors": top_risk,
+            "top_protective_factors": top_protective,
+        }
+    except Exception as exc:
+        return {
+            "status": "unavailable",
+            "method": "error",
+            "message": f"Could not calculate feature explanations: {exc}",
+        }
+
+
 def predict(features: dict[str, Any]) -> dict[str, Any]:
     bundle = load_model_bundle()
     if not isinstance(features, dict):
         raise ModelInputError("features must be an object.")
+
+    features = _normalize_features(features)
 
     required = _required_features(bundle)
     supplied = set(features)
@@ -138,7 +217,7 @@ def predict(features: dict[str, Any]) -> dict[str, Any]:
             features[feature] = 0
 
     predictions: dict[str, dict[str, Any]] = {}
-    explanations: dict[str, dict[str, str]] = {}
+    explanations: dict[str, dict[str, Any]] = {}
 
     for source_target, target_id in TARGET_MAP.items():
         feature_names = bundle["features"][source_target]
@@ -166,11 +245,7 @@ def predict(features: dict[str, Any]) -> dict[str, Any]:
             "positive_class": positive_class,
             "class_probabilities": class_probabilities,
         }
-        explanations[target_id] = {
-            "status": "unavailable",
-            "method": "not_configured",
-            "message": "Feature explanations are not available for this provisional artifact.",
-        }
+        explanations[target_id] = _compute_explanations(model, row)
 
     return {
         "status": "ok",
