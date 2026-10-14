@@ -22,8 +22,8 @@ COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r ./requirements.txt
 
 COPY backend/app ./app
-COPY "ml folder" ./ml_artifacts
-COPY "ml folder" "./ml folder"
+COPY ["ml folder", "./ml_artifacts/"]
+COPY ["ml folder", "./ml folder/"]
 
 # Copy compiled frontend from Stage 1
 COPY --from=frontend-builder /build/dist ./frontend/dist
