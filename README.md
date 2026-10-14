@@ -1,6 +1,15 @@
 # CardioVision 3D (Heart Beat Rhythm) 🫀
 
-**CardioVision 3D** is an explainable cardiovascular machine-learning decision support and 3D anatomical visualization system. It combines multi-target predictive modeling (`CAD`, `LAD`, `LCX`, `RCA`), an interactive WebGL coronary anatomy viewer with live hemodynamic flow simulation, clinical explainability (log-odds feature drivers), and a BodyParts3D (DBCLS) ontology explorer.
+[![Live Production](https://img.shields.io/badge/Live%20Demo-cardiovision--3d.up.railway.app-success?style=for-the-badge&logo=railway)](https://cardiovision-3d-production.up.railway.app)
+[![API Docs](https://img.shields.io/badge/API%20Docs-Swagger%20%2F%20OpenAPI-blue?style=for-the-badge&logo=fastapi)](https://cardiovision-3d-production.up.railway.app/docs)
+[![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
+
+### 🌐 Live Permanent Deployment
+* **Live Web Application**: [https://cardiovision-3d-production.up.railway.app](https://cardiovision-3d-production.up.railway.app)
+* **Interactive API Documentation**: [https://cardiovision-3d-production.up.railway.app/docs](https://cardiovision-3d-production.up.railway.app/docs)
+* **API Health Check**: [https://cardiovision-3d-production.up.railway.app/api/health](https://cardiovision-3d-production.up.railway.app/api/health)
+
+**CardioVision 3D** is an explainable cardiovascular machine-learning decision support and 3D anatomical visualization system. It combines multi-target predictive modeling (`CAD`, `LAD`, `LCX`, `RCA`), an interactive WebGL coronary anatomy viewer with live hemodynamic flow simulation, clinical explainability (log-odds feature drivers), an AI medical document/lab OCR extractor, and a patient records administration vault.
 
 > **Research and Educational Prototype Notice:** This software is developed for research demonstration and educational evaluation. It is not a certified medical device and must not be used as a substitute for professional clinical judgment, invasive catheterization, or diagnostic prescriptions.
 
