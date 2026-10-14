@@ -52,3 +52,10 @@ Thumbs.db
 # Build & inventory artifacts
 *.tsbuildinfo
 file-inventory.txt
+
+# Video generation & recorded demo files
+docs/demo_video/
+scripts/
+*.mp4
+*.webm
+
