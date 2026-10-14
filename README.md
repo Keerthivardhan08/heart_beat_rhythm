@@ -61,6 +61,19 @@ One-click inspection for judges and clinicians:
 * Formatted printable summary for patient records (`window.print()` / PDF export).
 * Includes patient profile, multi-vessel risk matrix, primary biomarker drivers, clinical next steps, and institutional governance disclaimer.
 
+### 7. AI Medical Document / Lab OCR Extractor & Admin Records Vault
+* **Document OCR Extractor**: Drag-and-drop ingestion of PDFs and image scans with 1-click auto-population of 52 clinical biomarkers.
+* **Patient Records (Admin Vault)**: Centralized registry storing patient analyses with search, risk tier filtering, 1-click load into the 3D heart, and CSV database export.
+
+---
+
+## 📑 Hackathon Deliverables & Documentation
+
+* **📄 [Comprehensive 6-Page Project Documentation](docs/PROJECT_DOCUMENTATION.md)**: Complete overview of dataset preprocessing, anti-leakage protocol, 4-target model architectures, 3D WebGL pipeline, and benchmark evaluation results.
+* **🎬 [Demonstration Video Script & Walkthrough Guide](docs/DEMO_VIDEO_SCRIPT.md)**: 3–5 minute step-by-step presentation script for YouTube video recording.
+* **🌐 Live Web Application**: [https://cardiovision-3d-production.up.railway.app](https://cardiovision-3d-production.up.railway.app)
+* **📑 Interactive API Documentation**: [https://cardiovision-3d-production.up.railway.app/docs](https://cardiovision-3d-production.up.railway.app/docs)
+
 ---
 
 ## 🛠 Tech Stack
