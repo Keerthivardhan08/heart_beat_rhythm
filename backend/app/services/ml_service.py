@@ -41,6 +41,18 @@ class ModelInputError(ValueError):
 
 
 def _default_artifact_dir() -> Path:
+    candidates = [
+        Path(__file__).resolve().parents[3] / "ml folder",
+        Path(__file__).resolve().parents[2] / "ml folder",
+        Path(__file__).resolve().parents[1] / "ml folder",
+        Path("ml folder").resolve(),
+        Path("/app/ml folder").resolve(),
+        Path("ml_artifacts").resolve(),
+        Path("/app/ml_artifacts").resolve(),
+    ]
+    for c in candidates:
+        if c.exists() and (c / "metadata.json").exists():
+            return c
     return Path(__file__).resolve().parents[3] / "ml folder"
 
 

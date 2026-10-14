@@ -1,0 +1,14 @@
+frontend/node_modules
+frontend/dist
+frontend/.vite
+.git
+.github
+__pycache__
+*.pyc
+.venv
+venv
+data
+docs
+tests
+visualization
+Copy_of_CardioVision3D_ML_Development.ipynb
