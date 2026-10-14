@@ -29,6 +29,8 @@ ml/artifacts/*
 *.pth
 *.pkl
 *.joblib
+!"ml folder"/*.joblib
+!ml_artifacts/*.joblib
 *.onnx
 
 # Node
