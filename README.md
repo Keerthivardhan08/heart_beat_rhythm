@@ -67,7 +67,7 @@ One-click inspection for judges and clinicians:
 
 ---
 
-## 📑 Hackathon Deliverables & Documentation
+## 📑 Documentation
 
 * **📄 [Comprehensive 6-Page Project Documentation](docs/PROJECT_DOCUMENTATION.md)**: Complete overview of dataset preprocessing, anti-leakage protocol, 4-target model architectures, 3D WebGL pipeline, and benchmark evaluation results.
 * **🌐 Live Web Application**: [https://cardiovision-3d-production.up.railway.app](https://cardiovision-3d-production.up.railway.app)
