@@ -41,19 +41,21 @@ class ModelInputError(ValueError):
 
 
 def _default_artifact_dir() -> Path:
+    current = Path(__file__).resolve()
+    base_dir = current.parent.parent  # /app or backend
     candidates = [
-        Path(__file__).resolve().parents[3] / "ml folder",
-        Path(__file__).resolve().parents[2] / "ml folder",
-        Path(__file__).resolve().parents[1] / "ml folder",
-        Path("ml folder").resolve(),
-        Path("/app/ml folder").resolve(),
+        Path("/app/ml_artifacts"),
+        Path("/app/ml folder"),
+        base_dir / "ml_artifacts",
+        base_dir / "ml folder",
+        base_dir.parent / "ml folder",
         Path("ml_artifacts").resolve(),
-        Path("/app/ml_artifacts").resolve(),
+        Path("ml folder").resolve(),
     ]
     for c in candidates:
         if c.exists() and (c / "metadata.json").exists():
             return c
-    return Path(__file__).resolve().parents[3] / "ml folder"
+    return base_dir.parent / "ml folder"
 
 
 def _artifact_dir() -> Path:

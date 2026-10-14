@@ -25,12 +25,16 @@ app.add_middleware(
 app.include_router(health_router, prefix="/api")
 app.include_router(predictions_router, prefix="/api")
 
-# Locate frontend dist directory
+# Locate frontend dist directory safely
+current_file = Path(__file__).resolve()
+base_dir = current_file.parent.parent  # /app in container, or backend/ locally
+
 candidate_dirs = [
-    Path(__file__).resolve().parents[2] / "frontend" / "dist",
-    Path(__file__).resolve().parents[3] / "frontend" / "dist",
+    base_dir / "frontend" / "dist",
+    base_dir.parent / "frontend" / "dist",
+    Path("/app/frontend/dist"),
     Path("frontend/dist").resolve(),
-    Path("/app/frontend/dist").resolve(),
+    Path("dist").resolve(),
 ]
 
 frontend_dist = next(
